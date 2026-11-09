@@ -1,0 +1,1397 @@
+<!DOCTYPE html>
+<html lang="id" class="auth-pending">
+<head>
+<meta charset="UTF-8">
+<style id="authPendingCSS">
+/* Penjaga sebelum status login diketahui: sembunyikan seluruh aplikasi & form, tampilkan spinner saja */
+html.auth-pending body>:not(#techLoginOvl){visibility:hidden!important}
+html.auth-pending #techLoginOvl .lg-shell{visibility:hidden}
+html.auth-pending #techLoginOvl{background:#fff}
+html.auth-pending #techLoginOvl::after{content:"";position:fixed;left:50%;top:50%;width:34px;height:34px;margin:-17px 0 0 -17px;border:3px solid #D5DDEE;border-top-color:#1565C0;border-radius:50%;animation:authSpin .8s linear infinite}
+@keyframes authSpin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){html.auth-pending #techLoginOvl::after{animation-duration:2s}}
+</style>
+<script>
+/* Lepas penjaga setelah Firebase menjawab (dipanggil dari onAuthChange). Pengaman: lepas otomatis setelah 12 detik
+   jika Firebase tidak merespons; saat itu form login (display:flex) tetap menutupi aplikasi. */
+window.__authReady=function(){document.documentElement.classList.remove('auth-pending')};
+setTimeout(window.__authReady,12000);
+</script>
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Citius-Portal Technical Support</title>
+<link id="pageFavicon" rel="icon" type="image/png" sizes="32x32" href="assets/icons/favicon-32.png">
+<link rel="icon" href="assets/icons/favicon.ico" sizes="any">
+<link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#1565C0">
+<link rel="stylesheet" href="css/style.css">
+<style id="scopeCSS">
+/* Toolbar "Tipe | Cari Kode | Decoder | Analisa Foto" hanya tampil di menu "Aplikasi Pembaca Error".
+   Aturan lama #moduleTabBar{display:flex!important} membuatnya ikut muncul di Software, Tools, dan Modul Pembelajaran. */
+body:not(.view-reader) #moduleTabBar{display:none!important}
+/* Judul ganda dihapus: "Software" dan "Modul ATM" (di atas daftar bank/kategori) serta "Tools" (di atas pencarian file).
+   Judul halaman sudah tampil di header; judul "Software - BNI" pada daftar file tetap ada sebagai konteks. */
+body.view-portal #portalTsBankHeading{display:none!important}
+body.view-tools #portalTsFilesTitle{display:none!important}
+</style>
+<style>
+.refg{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:12px}
+.refc{border:1px solid #E5E9F2;border-radius:12px;overflow:hidden;background:#fff;cursor:zoom-in;transition:box-shadow .15s,border-color .15s}
+.refc:hover{box-shadow:0 6px 18px rgba(30,41,90,.12);border-color:#B8C4F0}
+.refc img{display:block;width:100%;aspect-ratio:1409/975;object-fit:cover;background:#F3F5FA}
+.refc .rt{padding:9px 11px 3px;font-size:12px;font-weight:700;color:#1B2340;line-height:1.35}
+.refc .rd{padding:0 11px 11px;font-size:11px;color:#5B6580;line-height:1.45}
+
+#hwOvl{position:fixed;inset:0;background:rgba(10,14,30,.82);z-index:3600;display:none;align-items:center;justify-content:center;padding:14px;visibility:visible}
+#hwOvl.open{display:flex}
+#hwOvl .hwbox{background:#fff;border-radius:14px;width:100%;max-width:1180px;max-height:94vh;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.4)}
+#hwOvl .hwhd{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:11px 16px;border-bottom:1px solid #E5E9F2;font-weight:800;font-size:14px;color:#1F2937}
+#hwOvl .hwhd button{background:#F3F4F6;border:0;border-radius:8px;padding:6px 12px;font-size:13px;cursor:pointer}
+#hwTabs{display:flex;gap:6px;padding:8px 16px;border-bottom:1px solid #E5E9F2;flex-wrap:wrap}
+#hwTabs button{border:1px solid #D1D5DB;background:#fff;border-radius:999px;padding:5px 13px;font-size:12.5px;font-weight:700;cursor:pointer;color:#374151}
+#hwTabs button.on{background:#4F46E5;border-color:#4F46E5;color:#fff}
+#hwBody{overflow:auto;padding:12px 16px 16px}
+.hwfrm{position:relative;border:1px solid #E5E9F2;border-radius:8px;overflow:hidden;background:#fff}
+.hwfrm img{display:block;width:100%;height:auto}
+.hwfrm svg{position:absolute;inset:0;width:100%;height:100%}
+.hwcap{font-size:12.5px;line-height:1.6;color:#374151;margin:8px 2px 12px}
+.hwdip{margin-bottom:16px}.hwdip img{display:block;width:100%;border:1px solid #E5E9F2;border-radius:8px}
+.hwdt{font-weight:800;font-size:13px;margin-bottom:6px}.hwdt span{font-weight:500;color:#6B7280;font-size:12px;margin-left:6px}
+.bub.hwc ul{margin:6px 0 8px;padding-left:18px;font-size:12.5px}.bub.hwc li{margin-bottom:5px}.bub.hwc em{display:block;font-style:normal;color:#4B5563}
+.bub.hwc .hwt{font-size:11px;background:#EEF2FF;color:#4338CA;border-radius:6px;padding:1px 6px;font-weight:700}
+.bub.hwc .hwbtn{background:#4F46E5;color:#fff;border:0;border-radius:8px;padding:7px 13px;font-size:12.5px;font-weight:700;cursor:pointer}
+#refLb{position:fixed;inset:0;background:rgba(10,14,30,.86);z-index:3500;display:none;flex-direction:column;align-items:center;justify-content:flex-start;padding:14px;overflow:auto;visibility:visible}
+#refLb.open{display:flex}
+#refLb .lbbar{display:flex;gap:8px;align-items:center;justify-content:space-between;width:100%;max-width:1500px;color:#fff;margin-bottom:10px;font-size:13px;font-weight:700}
+#refLb .lbbar button{background:rgba(255,255,255,.16);border:0;color:#fff;border-radius:8px;padding:7px 12px;font-size:13px;cursor:pointer}
+#refLb img{max-width:100%;height:auto;border-radius:6px;background:#fff;cursor:zoom-in}
+#refLb img.z{max-width:none;width:200%;cursor:zoom-out}
+</style>
+<style>.refb{display:inline-flex;align-items:center;gap:3px;margin-left:8px;padding:1px 8px;border-radius:10px;background:#fff;color:#1D4ED8;border:1px solid #BFD3FF;font-size:10.5px;font-weight:700;vertical-align:middle;white-space:nowrap;font-family:inherit}#mRefHint{display:inline-flex;align-items:center;gap:4px;margin-top:6px;padding:2px 10px;border-radius:12px;background:#EEF2FF;color:#1D4ED8;border:1px solid #BFD3FF;font-size:11px;font-weight:700}</style>
+
+<style id="tsEscStyle">
+.ch-ts{margin-top:10px;padding-top:8px;border-top:1px dashed #D5DBEA}
+.ch-tsbtn{border:1px solid #F59E0B;background:#FFF8E6;color:#92400E;border-radius:999px;padding:6px 12px;font:700 12px var(--ui-font);cursor:pointer}
+.ch-tsbtn:hover{background:#FFEFC2}
+.ch-new.ts{border-color:#F59E0B;color:#92400E;background:#FFF8E6;margin-right:8px}
+.ch-new.ts:hover{background:#FFEFC2}
+#tsOvl{display:none;position:fixed;inset:0;background:rgba(13,30,70,.55);z-index:900;align-items:flex-start;justify-content:center;padding:16px;overflow-y:auto;backdrop-filter:blur(3px)}
+#tsOvl .tsx{background:#fff;color:#1A1F36;border-radius:16px;width:100%;max-width:640px;margin:auto;box-shadow:0 20px 60px rgba(0,0,0,.35);overflow:hidden}
+.tsx-h{display:flex;align-items:center;gap:10px;padding:14px 18px;background:linear-gradient(135deg,#1565C0,#0D47A1);color:#fff}
+.tsx-h h3{flex:1;font-size:16px;margin:0}
+.tsx-x{border:none;background:rgba(255,255,255,.18);color:#fff;width:30px;height:30px;border-radius:50%;font-size:15px;cursor:pointer}
+.tsx-b{padding:16px 18px;display:flex;flex-direction:column;gap:14px}
+.tsx-warn{background:#FFF8E6;border:1px solid #F5C469;border-radius:12px;padding:12px 14px;font-size:13px;line-height:1.5;color:#5B3A00}
+.tsx-warn b{color:#92400E}
+.tsx-warn ul{margin:6px 0 0 18px;padding:0}
+.tsx-pre{white-space:pre-wrap;background:#F4F7FF;border:1px solid #C5D0F0;border-radius:10px;padding:10px 12px;font:12.5px/1.55 var(--ui-font);margin:8px 0}
+.tsx-btn{border:1px solid #1565C0;background:#1565C0;color:#fff;border-radius:10px;padding:8px 14px;font:700 12.5px var(--ui-font);cursor:pointer}
+.tsx-btn.sec{background:#fff;color:#1565C0}
+.tsx-sec{font:800 12px var(--ui-font);letter-spacing:.04em;text-transform:uppercase;color:#4A5680;margin:0}
+.tsx-f{display:flex;flex-direction:column;gap:10px}
+.tsx-f label{font:700 12.5px var(--ui-font);color:#1A1F36;display:flex;flex-direction:column;gap:4px}
+.tsx-f label small{font-weight:500;color:#6B7699}
+.tsx-f input{border:1px solid #C5D0F0;border-radius:10px;padding:9px 11px;font:14px var(--ui-font);color:#1A1F36;background:#fff}
+.tsx-f input:focus{outline:2px solid #90B4F5;border-color:#1565C0}
+.tsx-f input.bad{border-color:#D32F2F;background:#FFF5F5}
+.tsx-list{display:flex;flex-direction:column;gap:8px}
+.tsx-ts{display:flex;align-items:center;gap:10px;border:1px solid #25D366;background:#F0FFF5;color:#14532D;border-radius:12px;padding:10px 14px;font:700 14px var(--ui-font);cursor:pointer;text-align:left}
+.tsx-ts:hover:not(:disabled){background:#DDFBE8}
+.tsx-ts:disabled{opacity:.45;cursor:not-allowed;border-color:#B8C2DC;background:#F3F5FA;color:#5B6788}
+.tsx-ts span{flex:1}
+.tsx-ts em{font:600 11.5px var(--ui-font);font-style:normal;color:inherit;opacity:.8}
+.tsx-miss{font-size:12.5px;color:#B42318;min-height:18px}
+.tsx-note{font-size:12px;color:#6B7699;line-height:1.5}
+.tsx-pg{display:flex;flex-direction:column;gap:14px}
+.tsx-step{font:800 11.5px var(--ui-font);letter-spacing:.04em;text-transform:uppercase;color:#1565C0}
+.tsx-hint{font-size:12.5px;color:#B45309;font-weight:600}
+.tsx-hint.ok{color:#1B7F3A}
+.tsx-btn:disabled{opacity:.45;cursor:not-allowed}
+.tsx-back{align-self:flex-start}
+@media(max-width:600px){
+ .ch-head{flex-wrap:wrap;gap:8px;padding:12px 14px}
+ .ch-head>div[style]{flex:1 1 120px}
+ .ch-new{padding:6px 10px;font-size:11.5px}
+ .ch-new.ts{margin-right:0}
+ .ch-new.ts .ts-l{display:none}
+ .ch-ts{margin-top:8px;padding-top:6px}
+ .ch-tsbtn{width:100%;padding:8px 10px;font-size:12px;border-radius:12px}
+ #tsOvl{padding:0;align-items:stretch}
+ #tsOvl .tsx{max-width:none;border-radius:0;margin:0;min-height:100%;display:flex;flex-direction:column}
+ .tsx-h{position:sticky;top:0;z-index:2;padding:12px 14px}
+ .tsx-h h3{font-size:15px}
+ .tsx-b{padding:12px 14px 24px;gap:12px;flex:1}
+ .tsx-warn{padding:10px 12px;font-size:12.5px}
+ .tsx-pre{font-size:12px;padding:8px 10px}
+ .tsx-btn{width:100%;padding:11px 14px;font-size:13.5px}
+ .tsx-back{width:auto}
+ .tsx-f input{font-size:16px;padding:11px}
+ .tsx-ts{padding:12px 14px;font-size:14px}
+ .tsx-ts em{display:none}
+}
+.tsx-sum{background:#F4F7FF;border:1px solid #C5D0F0;border-radius:10px;padding:10px 12px;font-size:12.5px;line-height:1.6;white-space:pre-wrap}
+.tsx-done{font-size:12.5px;font-weight:600;color:#1B7F3A;min-height:0}
+.tsx-f{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.tsx-f label.full{grid-column:1/-1}
+.tsx-tk{background:#EAF2FF;border:1px solid #9DBBF2;border-radius:10px;padding:9px 12px;font:600 13px var(--ui-font);color:#0D47A1}
+.tsx-tk b{font:800 15px var(--ui-font);letter-spacing:.03em}
+@media(max-width:600px){.tsx-f{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<!-- TECHNICIAN LOGIN GATE -->
+<style>
+#techLoginOvl{position:fixed;inset:0;z-index:900;overflow-y:auto;-webkit-overflow-scrolling:touch;font-family:var(--ui-font);color:var(--ink)}
+#techLoginOvl .lg-shell{width:100%;min-height:100vh;min-height:100dvh;display:flex;align-items:center;justify-content:center;padding:max(24px,env(safe-area-inset-top)) 20px max(24px,env(safe-area-inset-bottom))}
+#techLoginOvl .lg-label{display:block;font-size:13px;font-weight:600;color:var(--ink);margin-bottom:7px}
+#techLoginOvl .lg-field{display:block;margin-bottom:16px}
+#techLoginOvl .lg-ctl{position:relative;display:block}
+#techLoginOvl .lg-ctl>svg{position:absolute;left:14px;top:50%;width:19px;height:19px;margin-top:-9.5px;stroke:var(--icon);fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;pointer-events:none}
+#techLoginOvl .lg-input{width:100%;height:52px;padding:0 46px 0 44px;border:1.5px solid var(--line);border-radius:12px;background:var(--field);color:var(--ink);font:500 16px/1 var(--ui-font);outline:none;transition:border-color .15s,box-shadow .15s;-webkit-appearance:none;appearance:none}
+#techLoginOvl .lg-input::placeholder{color:var(--ph);font-weight:400}
+#techLoginOvl .lg-input:focus{border-color:var(--accent);box-shadow:0 0 0 4px var(--ring)}
+#techLoginOvl .lg-ctl:focus-within>svg{stroke:var(--accent)}
+#techLoginOvl .lg-eye{position:absolute;right:4px;top:50%;margin-top:-22px;width:44px;height:44px;border:0;background:none;border-radius:10px;display:grid;place-items:center;cursor:pointer;color:var(--icon)}
+#techLoginOvl .lg-eye:hover{color:var(--accent)}
+#techLoginOvl .lg-eye:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+#techLoginOvl .lg-eye svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+#techLoginOvl .lg-eye .lg-eye-off{display:none}
+#techLoginOvl .lg-eye.on .lg-eye-on{display:none}
+#techLoginOvl .lg-eye.on .lg-eye-off{display:block}
+#techLoginOvl #techLoginErr{margin:0 0 14px;padding:11px 14px;border-radius:10px;background:var(--err-bg);border:1px solid var(--err-line);color:var(--err);font-size:13px;line-height:1.45;font-weight:500}
+#techLoginOvl .lg-submit{width:100%;height:52px;border:0;border-radius:12px;background:var(--btn);color:#fff;font:700 15.5px/1 var(--ui-font);cursor:pointer;box-shadow:var(--btn-sh);transition:transform .12s,filter .15s}
+#techLoginOvl .lg-submit:hover{filter:brightness(1.08)}
+#techLoginOvl .lg-submit:active{transform:translateY(1px)}
+#techLoginOvl .lg-submit:focus-visible{outline:3px solid var(--ring);outline-offset:3px}
+#techLoginOvl .lg-submit:disabled{opacity:.7;cursor:progress;filter:none}
+#techLoginOvl .lg-help{margin-top:20px;font-size:13px;line-height:1.55;color:var(--mute);text-align:center}
+#techLoginOvl .lg-help b{color:var(--ink);font-weight:600}
+#techLoginOvl h1{font-weight:700;letter-spacing:-.015em;color:var(--ink)}
+@media (prefers-reduced-motion:reduce){#techLoginOvl *{transition:none!important}}
+#techLoginOvl{--ink:#10203F;--mute:#5E6B88;--icon:#8793AE;--line:#D5DDEE;--field:#fff;--ph:#9AA5BE;--accent:#1565C0;--ring:rgba(21,101,192,.16);--err:#B42318;--err-bg:#FDECEC;--err-line:#F6C7C7;--btn:linear-gradient(180deg,#1A73D9,#1565C0);--btn-sh:0 10px 22px -10px rgba(21,101,192,.75)}
+#techLoginOvl{background:#fff}
+#techLoginOvl .lg-shell{padding:0;align-items:stretch;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+#techLoginOvl .lg-side{position:relative;overflow:hidden;display:flex;flex-direction:column;justify-content:center;padding:56px;background:linear-gradient(160deg,#E4EFFF 0%,#CFE2FC 100%)}
+#techLoginOvl .lg-side::before{content:"";position:absolute;width:420px;height:420px;right:-150px;top:-230px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#5CA2F5,#1565C0);opacity:.9}
+#techLoginOvl .lg-side::after{content:"";position:absolute;width:84px;height:84px;right:96px;top:120px;border-radius:50%;background:#4CB06A;opacity:.85}
+#techLoginOvl .lg-side>*{position:relative;z-index:1}
+#techLoginOvl .lg-logo{width:96px;height:96px;margin-bottom:28px;border-radius:26px;background:#fff;display:grid;place-items:center;box-shadow:0 18px 36px -18px rgba(21,80,170,.6)}
+#techLoginOvl .lg-logo img{width:70px;height:70px;object-fit:contain;display:block}
+#techLoginOvl h1{font-size:clamp(28px,3vw,38px);line-height:1.15;max-width:12em}
+#techLoginOvl .lg-side p{margin-top:14px;font-size:15px;line-height:1.6;color:#41507A;max-width:26em}
+#techLoginOvl .lg-form-pane{display:flex;align-items:center;justify-content:center;padding:40px 32px}
+#techLoginOvl .lg-form-wrap{width:100%;max-width:380px}
+@media (max-width:860px){
+ #techLoginOvl .lg-shell{grid-template-columns:1fr;grid-template-rows:auto 1fr}
+ #techLoginOvl .lg-side{padding:max(28px,env(safe-area-inset-top)) 24px 56px;flex-direction:row;align-items:center;gap:16px;flex-wrap:wrap}
+ #techLoginOvl .lg-side::before{width:240px;height:240px;right:-90px;top:auto;bottom:-150px}
+ #techLoginOvl .lg-side::after{width:26px;height:26px;right:26px;top:auto;bottom:44px}
+ #techLoginOvl .lg-logo{width:64px;height:64px;margin:0;border-radius:18px}
+ #techLoginOvl .lg-logo img{width:46px;height:46px}
+ #techLoginOvl .lg-side h1{font-size:22px;flex:1;min-width:0}
+ #techLoginOvl .lg-side p{display:none}
+ #techLoginOvl .lg-form-pane{margin-top:-28px;position:relative;z-index:2;background:#fff;border-radius:26px 26px 0 0;align-items:flex-start;padding:30px 22px max(24px,env(safe-area-inset-bottom))}
+}
+</style>
+<div id="techLoginOvl" style="display:flex"><div class="lg-shell"><aside class="lg-side"><div class="lg-logo"><img src="assets/img/logo-login.png" alt="Citius" width="70" height="70" decoding="async"></div><h1>Portal Technical Support</h1><p>Pusat bantuan dan tool diagnosa untuk teknisi lapangan. Masuk dengan akun Anda.</p></aside><main class="lg-form-pane"><div class="lg-form-wrap"><div class="lg-form" role="form" aria-label="Form login teknisi">
+  <label class="lg-field"><span class="lg-label">Email</span><span class="lg-ctl">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="3"/><path d="m4 8 8 6 8-6"/></svg>
+    <input id="techEmailInput" class="lg-input" type="email" inputmode="email" autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" placeholder="Masukkan email" onkeydown="if(event.key==='Enter')document.getElementById('techPassInput').focus()"></span></label>
+  <label class="lg-field"><span class="lg-label">Password</span><span class="lg-ctl">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="10" width="16" height="10" rx="3"/><path d="M8 10V7.5a4 4 0 0 1 8 0V10"/></svg>
+    <input id="techPassInput" class="lg-input" type="password" autocomplete="current-password" placeholder="Masukkan password" onkeydown="if(event.key==='Enter')techLogin()">
+    <button type="button" class="lg-eye" id="techPassToggle" aria-label="Tampilkan password" aria-pressed="false" onclick="(function(b){var i=document.getElementById('techPassInput'),show=i.type==='password';i.type=show?'text':'password';b.classList.toggle('on',show);b.setAttribute('aria-pressed',show);b.setAttribute('aria-label',show?'Sembunyikan password':'Tampilkan password');})(this)">
+      <svg class="lg-eye-on" viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg>
+      <svg class="lg-eye-off" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3l18 18"/><path d="M10.6 5.1A9.7 9.7 0 0 1 12 5c6.4 0 10 7 10 7a17 17 0 0 1-3.2 4"/><path d="M6.6 6.7C3.9 8.4 2 12 2 12s3.6 7 10 7c1.7 0 3.2-.4 4.5-1"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/></svg>
+    </button></span></label>
+  <div id="techLoginErr" role="alert" aria-live="polite" style="display:none">Email atau password salah.</div>
+  <button id="techLoginBtn" class="lg-submit" type="button" onclick="techLogin()">Masuk</button>
+</div>
+<p class="lg-help"><b>Belum punya akun?</b> Hubungi admin Citius Technical Support untuk didaftarkan.</p></div></main></div></div>
+
+
+
+<header>
+  <div class="hdr"><button type="button" id="hdrLogoBtn" onclick="toggleSidebarDesktop()" title="Tampilkan menu" aria-label="Tampilkan menu"><img id="hdrLogoImg" alt="Citius"></button><button id="menuBtn" onclick="openSidebar()" aria-label="Menu"><svg class="i" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button>
+    <div class="logo">
+      <div class="logo-icon"><img src="assets/img/logo-header.png" alt="Citius" style="width:100%;height:100%;object-fit:contain;"></div>
+      <div>
+        <div class="logo-title" id="pageTitle">Portal Technical Support</div>
+        <div class="logo-sub" id="pageSub">Pusat Bantuan &amp; Tool Diagnosa Teknisi Lapangan</div>
+      </div>
+    </div>
+    <div class="admin-btn-wrap"><a id="waTopBtn" class="wa-btn" href="#" onclick="showView('chat');return false"><svg class="i" viewBox="0 0 24 24" style="width:15px;height:15px"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22z"/></svg><span>Tanya Clara</span></a>
+      <button id="headerAdminBtn" onclick="openAdminLogin()" style="background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);border-radius:7px;color:#fff;padding:6px 13px;font-size:11px;font-weight:600;cursor:pointer;display:none;align-items:center;gap:6px;font-family:var(--ui-font);transition:all .2s;white-space:nowrap" onmouseover="this.style.background='rgba(255,255,255,.28)'" onmouseout="this.style.background='rgba(255,255,255,.15)'">
+        🔐 Admin
+      </button>
+      <button id="techLogoutBtn" onclick="techLogout()" style="display:none;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);border-radius:7px;color:#fff;padding:6px 13px;font-size:11px;font-weight:600;cursor:pointer;align-items:center;gap:6px;font-family:var(--ui-font);transition:all .2s;white-space:nowrap" onmouseover="this.style.background='rgba(255,255,255,.28)'" onmouseout="this.style.background='rgba(255,255,255,.15)'">
+        🚪 Keluar
+      </button>
+    </div>
+  </div>
+</header>
+<div class="sb-bd" id="sbBackdrop" onclick="closeSidebar()"></div>
+<aside class="sb" id="sidebar">
+  <div class="sb-brand"><button type="button" class="sb-logo" id="sbLogoBtn" onclick="toggleSidebarDesktop()" title="Sembunyikan menu" aria-label="Sembunyikan menu"><img id="sbLogoImg" alt="Citius"></button><div class="sb-bt"><div class="sb-b1">PT. Citius Solusi Indonesia</div><div class="sb-b2">Portal Technical Support by Laska</div></div></div>
+  <nav class="sb-nav">
+    <div class="sb-sec">MENU UTAMA</div>
+    <button class="sb-item active" data-view="dashboard" onclick="showView('dashboard')"><span class="sb-ic" style="background:linear-gradient(135deg,#818CF8,#4F46E5)"><svg class="i" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg></span><span>Dashboard</span></button>
+    <button class="sb-item" data-view="reader" onclick="showView('reader')"><span class="sb-ic" style="background:linear-gradient(135deg,#FB7185,#F97316)"><svg class="i" viewBox="0 0 24 24"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg></span><span>Aplikasi Pembaca Error</span></button>
+    <button class="sb-item" data-view="swbank" onclick="showView('swbank')"><span class="sb-ic" style="background:linear-gradient(135deg,#38BDF8,#2563EB)"><svg class="i" viewBox="0 0 24 24"><path d="M4 14.9A7 7 0 1 1 15.7 8h1.8a4.5 4.5 0 0 1 2.5 8.2"/><path d="M12 12v9"/><path d="m8 17 4 4 4-4"/></svg></span><span>Software</span></button>
+    <button class="sb-item" data-view="tools" onclick="showView('tools')"><span class="sb-ic" style="background:linear-gradient(135deg,#2DD4BF,#0D9488)"><svg class="i" viewBox="0 0 24 24"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94z"/></svg></span><span>Tools</span></button>
+    <button class="sb-item" data-view="modul" onclick="showView('modul')"><span class="sb-ic" style="background:linear-gradient(135deg,#FBBF24,#EA580C)"><svg class="i" viewBox="0 0 24 24"><path d="M22 10 12 5 2 10l10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg></span><span>Modul Pembelajaran</span></button>
+    <div class="sb-sec" style="padding-top:14px">ASISTEN CERDAS</div>
+    <button class="sb-item" data-view="chat" onclick="showView('chat')"><span class="sb-ic" style="background:linear-gradient(135deg,#C084FC,#6366F1)"><svg class="i" viewBox="0 0 24 24"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/><path d="M19 15l.7 1.8 1.8.7-1.8.7L19 20l-.7-1.8-1.8-.7 1.8-.7z"/></svg></span><span>Technical Support Assistant</span><em class="sb-new">AI</em></button>
+  </nav>
+  
+  <div class="sb-foot">
+    <div class="sb-user"><div class="sb-av" id="sbAv">FSE</div><div style="min-width:0"><div class="sb-u1" id="sbU1">Teknisi Lapangan</div><div class="sb-u2" id="sbU2">PT. Citius Solusi Indonesia</div></div></div>
+    <button id="sbAdminBtn" onclick="openAdminLogin()"><svg class="i" viewBox="0 0 24 24" style="width:14px;height:14px"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>Mode Admin (Update Data)</button>
+    <button id="sbLogout" class="sb-out" onclick="techLogout()"><svg class="i" viewBox="0 0 24 24" style="width:15px;height:15px"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="m16 17 5-5-5-5"/><path d="M21 12H9"/></svg>Keluar</button>
+    <div class="sb-ver">Rev. V.3.0.1</div>
+  </div>
+</aside>
+
+
+
+<div id="viewHead"><span class="vh-badge" id="vhBadge"></span><h2 id="vhTitle"></h2><p id="vhSub"></p><div class="vm-ctl" id="vmCtl"></div></div>
+<!-- DASHBOARD -->
+<div id="dashboardView">
+  <div class="hero">
+    <span class="hero-tag">Official Technical Support</span>
+    <h2>Ada Pertanyaan atau Kendala di Lapangan?</h2>
+    <p>Tanyakan langsung ke <b>Clara, Technical Support Assistant</b>: solusi ATM, kelistrikan, elektronik, masalah komputer, Windows, hingga panduan instalasi, siap membantu 24/7.</p>
+    <div class="hero-btns">
+      <button class="wa-btn" onclick="showView('chat')"><svg class="i" viewBox="0 0 24 24"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22z"/></svg>Tanya Clara</button>
+      <button class="ghost-btn" onclick="showView('reader')">Buka Aplikasi Pembaca Error</button>
+    </div>
+  </div>
+  <div id="adminDashHead">
+    <span class="adh-tag">Mode Admin</span>
+    <h2>Dashboard Admin</h2>
+    <p>Pantau penggunaan, kelola data, dan atur AI untuk seluruh FSE.</p>
+    <div class="adh-who" id="adhWho"></div>
+    <div class="hero-btns">
+      <button class="adh-pri" onclick="adminGo('portal')">Kelola File Portal</button>
+      <button class="ghost-btn" onclick="adminGo('errors')">Database Error Code</button>
+      <button class="ghost-btn" onclick="adminGo('usage')">Laporan Penggunaan</button>
+    </div>
+  </div>
+  <section id="adminLive">
+    <div class="al-head"><div><h3>Laporan Pengguna <span class="al-live"><i></i>LIVE</span></h3><p id="alSub">Memuat data penggunaan...</p></div>
+      <div class="al-ctl"><span class="al-count" id="alCount"></span>
+        <div class="al-btns">
+        <select id="alRange" aria-label="Rentang"><option value="1">Hari ini</option><option value="7" selected>7 hari</option><option value="30">30 hari</option><option value="custom">Pilih tanggal…</option></select>
+        <button type="button" id="alRefresh">&#8635; Refresh</button><button type="button" id="alFull">Laporan lengkap &rarr;</button></div>
+        <div class="al-custom" id="alCustom" hidden>
+          <label>Dari <input type="date" id="alFrom"></label>
+          <label>Sampai <input type="date" id="alTo"></label>
+          <button type="button" id="alApply">Terapkan</button>
+          <span class="al-cerr" id="alCErr"></span>
+        </div></div></div>
+    <div class="al-stats" id="alStats"></div>
+    <div class="al-grid"><div class="al-card al-t-blue" id="alDay"></div><div class="al-card al-t-violet" id="alMix"></div><div class="al-card al-t-indigo" id="alFse"></div><div class="al-card al-t-orange" id="alErr"></div><div class="al-card al-t-blue" id="alKw"></div><div class="al-card al-t-green" id="alDl"></div><div class="al-card al-t-violet" id="alBrand"></div><div class="al-card al-t-teal" id="alClara"></div><div class="al-card al-t-rose" id="alMiss"></div></div>
+  </section>
+  <div id="adminDashBody">
+    <div class="adb-title">Pengelolaan</div>
+    <div class="adb-grid">
+      <button class="adb-card" onclick="adminGo('portal')"><span class="adb-ic" style="background:linear-gradient(135deg,#38BDF8,#2563EB)"><svg class="i" viewBox="0 0 24 24"><path d="M4 14.9A7 7 0 1 1 15.7 8h1.8a4.5 4.5 0 0 1 2.5 8.2"/><path d="M12 12v9"/><path d="m8 17 4 4 4-4"/></svg></span><b>Portal TS</b><span>Kelola file Software, Modul ATM, dan Tools.</span><em>Buka Portal TS &rarr;</em></button>
+      <button class="adb-card" onclick="adminGo('errors')"><span class="adb-ic" style="background:linear-gradient(135deg,#FB923C,#EA580C)"><svg class="i" viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14a9 3 0 0 0 18 0V5"/><path d="M3 12a9 3 0 0 0 18 0"/></svg></span><b>Database Error Code</b><span id="adbDbTxt">Tambah, ubah, dan hapus kode error per modul.</span><em>Kelola kode &rarr;</em></button>
+      <button class="adb-card" onclick="adminGo('ai')"><span class="adb-ic" style="background:linear-gradient(135deg,#A78BFA,#6366F1)"><svg class="i" viewBox="0 0 24 24"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/></svg></span><b>Konfigurasi AI Vision</b><span>API, model, dan izin analisa foto untuk Clara dan Smart Analyzer.</span><em>Atur AI &rarr;</em></button>
+      <button class="adb-card" onclick="adminGo('usage')"><span class="adb-ic" style="background:linear-gradient(135deg,#34D399,#059669)"><svg class="i" viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 5-6"/></svg></span><b>Laporan Penggunaan</b><span>Rekap aktivitas FSE per tanggal; ekspor Excel atau CSV.</span><em>Buka laporan &rarr;</em></button>
+    </div>
+    <div class="adb-title">Ringkasan database error code</div>
+    <div class="adb-db" id="adbDb"></div>
+    <div class="adb-title">Akses cepat aplikasi</div>
+    <div class="adb-quick">
+      <button onclick="showView('reader')">Pembaca Error</button><button onclick="showView('swbank')">Software</button><button onclick="showView('tools')">Tools</button><button onclick="showView('modul')">Modul Pembelajaran</button><button onclick="showView('chat')">Tanya Clara</button>
+    </div>
+  </div>
+
+  <div class="cards">
+    <div class="fcard"><div class="fc-top"><div class="fc-ico" style="background:#FEF2F2;color:#DC2626"><svg class="i" viewBox="0 0 24 24"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg></div><span class="fc-badge" style="background:#FEE2E2;color:#B91C1C">Utama</span></div>
+      <h3>Aplikasi Pembaca Error Code</h3><p>Cek kode error ATM (Hyosung, NCR, Wincor) secara cepat di lokasi, lengkap dengan Smart Analyzer.</p>
+      <button class="fc-btn pri" onclick="showView('reader')">Buka Tool Pembaca Error →</button></div>
+    <div class="fcard"><div class="fc-top"><div class="fc-ico" style="background:#EFF6FF;color:#1D4ED8"><svg class="i" viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14a9 3 0 0 0 18 0V5"/><path d="M3 12a9 3 0 0 0 18 0"/></svg></div><span class="fc-badge" style="background:#DBEAFE;color:#1D4ED8">Repo Software</span></div>
+      <h3>Software</h3><p>Download installer, firmware, patch, dan driver konfigurasi perbankan terbaru.</p>
+      <button class="fc-btn" onclick="showView('swbank')">Lihat Software →</button></div>
+    <div class="fcard"><div class="fc-top"><div class="fc-ico" style="background:#F0FDFA;color:#0D9488"><svg class="i" viewBox="0 0 24 24"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94z"/></svg></div><span class="fc-badge" style="background:#CCFBF1;color:#0F766E">Utilitas</span></div>
+      <h3>Tools</h3><p>Kumpulan tools dan utilitas pendukung pekerjaan Teknisi Lapangan.</p>
+      <button class="fc-btn" onclick="showView('tools')">Lihat Tools →</button></div>
+    <div class="fcard"><div class="fc-top"><div class="fc-ico" style="background:#FFFBEB;color:#D97706"><svg class="i" viewBox="0 0 24 24"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg></div><span class="fc-badge" style="background:#FEF3C7;color:#B45309">Knowledge</span></div>
+      <h3>Modul Pembelajaran</h3><p>Kumpulan modul dan panduan teknis ATM untuk menunjang pekerjaan Teknisi Lapangan.</p>
+      <button class="fc-btn" onclick="showView('modul')">Akses Modul →</button></div>
+    <div class="fcard ai"><div class="fc-top"><div class="fc-ico"><svg class="i" viewBox="0 0 24 24"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/><path d="M19 15l.7 1.8 1.8.7-1.8.7L19 20l-.7-1.8-1.8-.7 1.8-.7z"/></svg></div><span class="fc-badge" style="background:#EDE9FE;color:#6D28D9">AI • Baru</span></div>
+      <h3>Technical Support Assistant</h3><p>Asisten teknis profesional: ATM, kelistrikan, elektronik, komputer, Windows, dan panduan instalasi.</p>
+      <button class="fc-btn pri ai" onclick="showView('chat')">Mulai Chat →</button></div>
+  </div>
+</div>
+<div id="chatView"><div class="chat">
+  <div class="ch-head"><div class="ch-av"><svg class="i" viewBox="0 0 24 24"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/></svg></div>
+    <div style="flex:1;min-width:0"><div class="ch-name">Clara</div><div class="ch-st"><i></i>Online &bull; Technical Support Assistant</div></div>
+    <button class="ch-new ts" id="chTsBtn" style="display:none" onclick="tsOpen()">📞 <span class="ts-l">Hubungi </span>TS</button><button class="ch-new" onclick="chatReset()">+ Chat Baru</button></div>
+  <div class="ch-chips" id="chChips"></div>
+  <div class="ch-msgs" id="chMsgs"></div>
+  <div class="ch-fileinfo" id="chFile" style="display:none"></div>
+  <div class="ch-in">
+    <input type="file" id="chPhoto" multiple style="display:none" onchange="chatPickMany(this.files)">
+    <button class="ch-ico" title="Lampirkan foto atau file EJ (boleh lebih dari satu file)" onclick="document.getElementById('chPhoto').click()"><svg class="i" viewBox="0 0 24 24"><path d="m21.4 11.1-9.2 9.2a6 6 0 0 1-8.5-8.5l9.2-9.2a4 4 0 0 1 5.7 5.7l-9.2 9.2a2 2 0 0 1-2.8-2.8l8.5-8.5"/></svg></button>
+    <textarea id="chatInput" rows="1" placeholder="Tulis masalah Anda: merk/tipe, error code, gejala..."></textarea>
+    <button class="ch-send" id="chSend" onclick="chatSend()"><svg class="i" viewBox="0 0 24 24"><path d="m22 2-7 20-4-9-9-4z"/><path d="M22 2 11 13"/></svg></button>
+  </div>
+  <div class="ch-note">AI dapat keliru. Untuk pekerjaan listrik &amp; area vault ATM, patuhi SOP keselamatan dan eskalasi ke Team Leader/Technical Support bila ragu.</div>
+</div></div>
+<!-- BRAND SELECTOR -->
+<div id="brandSelectorBar" style="background:#EEF2F8;border-bottom:1px solid #D5DCEA;padding:10px 28px;display:flex;gap:10px;align-items:center">
+  <div class="bs-seg">
+  <button id="brandBtnHyosung" onclick="showBrand('hyosung')" style="padding:8px 20px;border-radius:8px;border:none;background:#1565C0;color:#F5FAFF;font-weight:900;font-size:13px;cursor:pointer;font-family:var(--ui-font);transition:all .15s;letter-spacing:.02em"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:15px;height:15px;vertical-align:-3px;margin-right:6px;flex-shrink:0"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><path d="M15 2v2M15 20v2M2 15h2M2 9h2M20 15h2M20 9h2M9 2v2M9 20v2"/></svg>Hyosung</button>
+  <button id="brandBtnLainnya" onclick="showBrand('lainnya')" style="padding:8px 20px;border-radius:8px;border:none;background:#FFFFFF;color:#1B2A4A;font-weight:800;font-size:13px;cursor:pointer;font-family:var(--ui-font);border:1px solid #D5DCEA;transition:all .15s;letter-spacing:.02em"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:15px;height:15px;vertical-align:-3px;margin-right:6px;flex-shrink:0"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg>Brand Lainnya</button>
+  <button id="brandBtnPortalTs" onclick="showPortalTs()" style="padding:8px 20px;border-radius:8px;border:1px solid #D5DCEA;background:#FFFFFF;color:#1B2A4A;font-weight:800;font-size:13px;cursor:pointer;font-family:var(--ui-font);transition:all .15s;letter-spacing:.02em"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:15px;height:15px;vertical-align:-3px;margin-right:6px;flex-shrink:0"><path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2z"/></svg>Portal TS</button>
+  </div>
+</div>
+
+<div id="moduleTabBar" style="padding:0 24px 0;">
+  <div class="mod-sel-row">
+    <label for="modSelect" class="mod-sel-lbl">Tipe</label>
+    <div class="mod-sel-wrap">
+      <select id="modSelect" class="mod-sel" onchange="modSelChange(this.value)" aria-label="Pilih tipe atau modul mesin">
+        <option value="brm860">BRM 860</option>
+        <option value="brm50">BRM 50</option>
+        <option value="cdu10">CDU 10</option>
+        <option value="cdu30">CDU 30</option>
+        <option value="cdu800">CDU 800</option>
+        <option value="extra">Modul Lainnya</option>
+      </select>
+    </div>
+  </div>
+  <div class="hyo-tabs" role="tablist" aria-label="Alat Hyosung">
+    <button type="button" role="tab" class="hyo-tab active" data-ht="search" onclick="hyoSetTab('search')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg><span>Cari Kode</span></button>
+    <button type="button" role="tab" class="hyo-tab" data-ht="decoder" onclick="hyoSetTab('decoder')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2v7.5"/><path d="M14 2v7.5"/><path d="M8.5 2h7"/><path d="M14 9.5a5 5 0 1 1-4 0"/><path d="M5.5 16h13"/></svg><span>Decoder</span></button>
+    <button type="button" role="tab" class="hyo-tab" data-ht="smart" onclick="hyoSetTab('smart')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/><path d="m12 8 1.2 2.8L16 12l-2.8 1.2L12 16l-1.2-2.8L8 12l2.8-1.2z"/></svg><span>Analisa Foto</span><em>AI</em></button>
+  </div>
+  <div class="tabs" style="display:none;max-width:1440px;margin:0 auto;align-items:center;gap:4px;padding:0;flex-wrap:wrap;background:transparent;border:none;border-radius:0;" aria-hidden="true">
+    <button class="tab active" id="tab860" onclick="switchMod('brm860',this)">BRM 860</button>
+    <button class="tab" id="tab50" onclick="switchMod('brm50',this)">BRM 50</button>
+    <button class="tab" id="tabCdu10" onclick="switchMod('cdu10',this)">CDU 10</button>
+    <button class="tab" id="tabCdu30" onclick="switchMod('cdu30',this)">CDU 30</button>
+    <button class="tab" id="tabCdu800" onclick="switchMod('cdu800',this)">CDU 800</button>
+    <button class="tab" id="tabExtra" onclick="switchMod('extra',this)">Modul Lainnya</button>
+  </div>
+</div>
+
+<!-- BRAND LAINNYA PANEL -->
+<div id="lainnyaPanel" style="display:none;padding:24px 28px;max-width:1300px;margin:0 auto">
+  <div id="lainnyaBrandList">
+    <div class="bl-head"><div><div class="bl-title">Pilih Brand ATM</div>
+    <div class="bl-sub">Referensi error code untuk merk ATM selain Hyosung. Pilih salah satu untuk mulai.</div></div></div>
+    <div id="brandCardsGrid" style="display:flex;gap:16px;flex-wrap:wrap">
+    <div class="brand-choice-card bcard b-ncr" onclick="showNcr()" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();showNcr()}">
+      <div class="bc-ico">N</div>
+      <div class="bc-tag">Cek kode M-Status dan M-Data</div>
+      <div class="bc-name">NCR</div>
+      <div class="bc-desc">Cari arti kode M-Status, baca M-Data, dan lihat langkah penanganannya.</div>
+      <div class="bc-chips"><span>S1 Dispenser</span><span>Card Reader</span></div>
+      <div class="bc-go">Buka NCR <i>→</i></div>
+    </div>
+    <div class="brand-choice-card bcard b-wincor" onclick="showWincor()" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();showWincor()}">
+      <div class="bc-ico">W</div>
+      <div class="bc-tag">Pembaca kode error</div>
+      <div class="bc-name">WINCOR</div>
+      <div class="bc-desc">Ketik kode di layar CDM untuk melihat arti dan cara penanganannya.</div>
+      <div class="bc-chips"><span>CDM-V4</span><span>CMD-V4</span></div>
+      <div class="bc-go">Buka Wincor <i>→</i></div>
+    </div>
+    </div>
+  </div>
+  <div id="ncrContainer" style="display:none">
+    <div class="ncr-toprow">
+      <button class="bl-back" onclick="backToBrandList()">← Kembali ke Pilihan Brand</button>
+      <div class="ncr-dd" id="ncrDd">
+        <button type="button" class="ncr-dd-btn" id="ncrDdBtn" aria-haspopup="listbox" aria-expanded="false" onclick="ncrDdToggle(event)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;flex-shrink:0"><rect width="20" height="12" x="2" y="6" rx="2"/><circle cx="12" cy="12" r="2"/><path d="M6 12h.01M18 12h.01"/></svg><span id="ncrDdLbl">S1 Dispenser</span><svg class="ncr-dd-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;flex-shrink:0"><path d="m6 9 6 6 6-6"/></svg></button>
+        <div class="ncr-dd-list" id="ncrDdList" role="listbox" aria-label="Pilih perangkat NCR"></div>
+      </div>
+      <div class="ncr-tabs" role="tablist" aria-label="Modul NCR" style="display:none">
+        <button type="button" role="tab" class="ncr-tab active" data-nt="dispenser" onclick="ncrSetTab('dispenser')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:15px;height:15px;vertical-align:-3px;margin-right:0px;flex-shrink:0"><rect width="20" height="12" x="2" y="6" rx="2"/><circle cx="12" cy="12" r="2"/><path d="M6 12h.01M18 12h.01"/></svg>S1 Dispenser</button>
+        <button type="button" role="tab" class="ncr-tab" data-nt="cardreader" onclick="ncrSetTab('cardreader')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:15px;height:15px;vertical-align:-3px;margin-right:0px;flex-shrink:0"><rect width="20" height="14" x="2" y="5" rx="2"/><path d="M2 10h20"/></svg>IMCRW/UIMCRW</button>
+        <button type="button" role="tab" class="ncr-tab" data-nt="lainnya" onclick="ncrSetTab('lainnya')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:15px;height:15px;vertical-align:-3px;margin-right:0px;flex-shrink:0"><rect width="14" height="8" x="5" y="2" rx="1"/><rect width="20" height="8" x="2" y="14" rx="1"/><path d="M6 18h2M6 6h.01"/></svg>Perangkat Lain</button>
+      </div>
+    </div>
+    <iframe id="ncrFrame" title="NCR ATM M-Status Checker" style="width:100%;height:78vh;background:#fff" onload="window.ncrSetTab&&ncrSetTab('dispenser')"></iframe>
+  </div>
+  <div id="wincorContainer" style="display:none">
+    <button class="bl-back" onclick="backToBrandList()">← Kembali ke Pilihan Brand</button>
+    <iframe id="wincorFrame" title="Wincor CDM-V4 Error Reader" style="width:100%;height:78vh;background:#fff"></iframe>
+  </div>
+</div>
+
+<!-- PORTAL TS DOWNLOADS -->
+  <div id="smartAnalyzerContainer" style="display:none">
+    <div class="smart-box">
+      <div class="sa-head"><div class="sa-ico"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/><path d="M11 8v6M8 11h6"/></svg></div>
+      <div><div class="sa-title">Smart Analyzer — Print History</div>
+      <div class="sa-sub">Analisa AI Vision membaca foto langsung. Tombol OCR terpisah memerlukan internet; teks hasilnya dapat diedit sebelum dianalisa.</div></div></div>
+      <div class="hyo-ctx">Menganalisa untuk mesin <b id="hyoCtxMesin">BRM 860</b><span>ganti di pilihan Mesin di atas</span></div>
+      <div class="smart-controls">
+        <div class="smart-field" style="display:none">
+          <label for="smartModule">Jenis modul</label>
+          <select id="smartModule">
+            <option value="brm860">BRM860</option>
+            <option value="brm50">BRM50</option>
+            <option value="other">Modul lainnya</option>
+          </select>
+        </div>
+        <div class="smart-field" style="min-width:240px">
+          <label>Foto print history</label>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+            <input id="smartCameraImage" type="file" accept="image/*" capture="environment" onchange="smartReadImage(this.files[0])" style="display:none">
+            <input id="smartFileImage" type="file" accept="image/*" onchange="smartReadImage(this.files[0])" style="display:none">
+            <button type="button" class="smart-action secondary" onclick="document.getElementById('smartCameraImage').click()" style="flex:1;min-width:120px">Ambil Foto</button>
+            <button type="button" class="smart-action secondary" onclick="document.getElementById('smartFileImage').click()" style="flex:1;min-width:120px">Pilih File</button>
+          </div>
+        </div>
+        <div class="sa-actions"><button class="smart-action secondary" onclick="smartRunOcr()" id="smartOcrBtn">Baca Foto</button>
+        <button class="smart-action" onclick="smartAnalyze()">Analisa Riwayat</button>
+        <button class="smart-action" onclick="smartRunAiAnalysis()" id="smartAiBtn">Analisa Foto + Problem AI</button>
+      </div>
+        </div>
+      <img id="smartPreview" class="smart-preview" alt="Pratinjau foto print history">
+      <div id="smartStatus" class="smart-status" aria-live="polite">Belum ada foto atau teks riwayat.</div>
+      <div class="smart-field">
+        <label for="smartHistoryText">Teks print history</label>
+        <textarea id="smartHistoryText" placeholder="Tempel hasil OCR atau teks print history di sini. Contoh: 20-11-10 12:46:22 (VDM) 5D0N800"></textarea>
+      </div>
+      <div id="smartOutput" class="smart-output" aria-live="polite"></div>
+      <style id="saQuickCss">
+.sa-quick{border:1px solid #E5E9F2;border-left:6px solid #F59E0B;background:#FFFBEB;border-radius:16px;padding:16px 18px;margin:12px 0}
+.sa-quick.sa-conf{border-left-color:#3B82F6;background:#F3F7FF}
+.sa-quick.sa-esc{border-left-color:#DC2626;background:#FEF2F2}
+.sa-q-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:4px}
+.sa-q-head h3{font-size:16px;color:#111827;margin:0}
+.sa-q-pill{font:700 11px var(--ui-font);padding:4px 10px;border-radius:999px;background:#F59E0B;color:#fff}
+.sa-conf .sa-q-pill{background:#3B82F6}.sa-esc .sa-q-pill{background:#DC2626}
+.sa-q-meta{font-size:12px;color:#6B7280;margin:0 0 10px}
+.sa-q-row{margin-top:10px}.sa-q-row b{display:block;font-size:12px;color:#374151;margin-bottom:2px}
+.sa-q-row p{margin:0;font-size:14px;line-height:1.55;color:#1F2937}
+.sa-q-row ol{margin:2px 0 0 20px;padding:0}.sa-q-row li{font-size:14px;line-height:1.55;color:#1F2937;margin-bottom:3px}
+.sa-q-warn{margin:12px 0 0;font-size:12.5px;color:#92400E;background:#FEF3C7;border-radius:10px;padding:8px 10px}
+.sa-dl{position:relative;display:inline-block;margin-top:14px}
+.sa-dl-menu{display:none;position:absolute;left:0;top:calc(100% + 6px);min-width:250px;background:#fff;border:1px solid #E1E6F0;border-radius:12px;box-shadow:0 10px 30px rgba(15,23,42,.15);padding:6px;z-index:30}
+.sa-dl-menu.open{display:block}
+.sa-dl-item{display:block;width:100%;text-align:left;background:none;border:none;border-radius:8px;padding:9px 12px;cursor:pointer;font-family:var(--ui-font)}
+.sa-dl-item:hover{background:#F1F5FF}
+.sa-dl-item b{display:block;font-size:13px;color:#111827}.sa-dl-item span{font-size:11.5px;color:#6B7280}
+</style>
+<div id="smartAiOutput" class="smart-output" aria-live="polite"></div>
+    </div>
+  </div>
+<div id="portalTsPanel" style="display:none;padding:24px 28px;max-width:1300px;margin:0 auto">
+  <div id="portalTsHome">
+    <div style="font-size:20px;font-weight:700;color:#1B2A4A;margin-bottom:4px">Portal TS</div>
+    <div style="font-size:13px;color:#5F6B7A;margin-bottom:20px">Pilih kategori file yang dibutuhkan</div>
+    <div style="display:flex;gap:12px;flex-wrap:wrap">
+      <button onclick="showPortalCategory('software')" class="portal-category-btn">Software</button>
+      <button onclick="showPortalCategory('modul-atm')" class="portal-category-btn">Modul ATM</button>
+      <button onclick="showPortalCategory('tools')" class="portal-category-btn">Tools</button>
+    </div>
+  </div>
+  <div id="portalTsBanks" style="display:none">
+    <button onclick="showPortalTs()" class="portal-back-btn">← Portal TS</button>
+    <div id="portalTsBankHeading" style="font-size:18px;font-weight:700;color:#1B2A4A;margin:8px 0 4px">Software</div>
+    <div id="portalTsSoftwareBanks">
+      <div style="font-size:13px;color:#5F6B7A;margin-bottom:18px">Pilih bank</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button onclick="showPortalFiles('software','BNI')" class="portal-bank-btn">BNI</button>
+      <button onclick="showPortalFiles('software','Mandiri')" class="portal-bank-btn">Mandiri</button>
+      <button onclick="showPortalFiles('software','BRI')" class="portal-bank-btn">BRI</button>
+      <button onclick="showPortalFiles('software','BTN')" class="portal-bank-btn">BTN</button>
+      <button onclick="showPortalFiles('software','Bank Sumsel')" class="portal-bank-btn">Bank Sumsel</button>
+      <button onclick="showPortalFiles('software','Jalin')" class="portal-bank-btn">Jalin</button>
+      <button onclick="showPortalFiles('software','Bank Lainnya')" class="portal-bank-btn">Bank Lainnya</button>
+      </div>
+    </div>
+    <div id="portalTsModuleCategories" style="display:none">
+      <div style="font-size:13px;color:#5F6B7A;margin-bottom:18px">Pilih kategori Modul ATM</div>
+      <div id="portalTsModuleCategoryList" style="display:flex;gap:8px;flex-wrap:wrap"></div>
+    </div>
+  </div>
+  <div id="portalTsFilesView" style="display:none">
+    <button id="portalTsBackBtn" onclick="backPortalFiles()" class="portal-back-btn">← Kembali</button>
+    <div id="portalTsFilesTitle" style="font-size:18px;font-weight:700;color:#1B2A4A;margin:8px 0 14px"></div>
+    <div id="portalSoftwareListControls" class="portal-list-controls" style="display:none">
+      <input id="portalSoftwareSearch" type="search" placeholder="Cari nama atau deskripsi file..." aria-label="Cari file" oninput="portalUpdateFileList()">
+      <label for="portalSoftwarePageSize" style="font-size:12px;color:#4A5680;font-weight:600">Maks. baris per halaman</label>
+      <select id="portalSoftwarePageSize" aria-label="Maksimum baris per halaman" onchange="portalUpdateFileList()">
+        <option value="10" selected>10</option>
+        <option value="25">25</option>
+        <option value="50">50</option>
+        <option value="100">100</option>
+        <option value="0">Semua</option>
+      </select>
+      <span id="portalSoftwareListMeta" class="portal-list-meta" aria-live="polite"></span>
+    </div>
+    <div id="portalTsFileList" aria-live="polite"></div>
+    <div id="portalSoftwarePagination" class="portal-pagination" style="display:none">
+      <button id="portalSoftwarePrev" type="button" onclick="portalChangeFilePage(-1)">← Sebelumnya</button>
+      <span id="portalSoftwarePageMeta" class="portal-list-meta" aria-live="polite"></span>
+      <button id="portalSoftwareNext" type="button" onclick="portalChangeFilePage(1)">Berikutnya →</button>
+    </div>
+  </div>
+</div>
+
+<script src="data/app-ncr.js"></script>
+<script src="data/app-wincor.js"></script>
+<script src="js/core.js"></script>
+
+<div class="app" id="hyosungAppRoot">
+  
+<!-- DECODER PANEL -->
+<div class="decoder-wrap" id="decoderWrap">
+  <div class="decoder-header" id="decHdr" onclick="toggleDecoder()">
+    <div class="decoder-header-left">
+      <span class="dec-ico"><svg viewBox="0 0 24 24"><path d="M6 18h8"/><path d="M3 22h18"/><path d="M14 22a7 7 0 1 0 0-14h-1"/><path d="M9 14h2"/><path d="M9 12a2 2 0 0 1-2-2V6h6v4a2 2 0 0 1-2 2Z"/><path d="M12 6V3a1 1 0 0 0-1-1H9a1 1 0 0 0-1 1v3"/></svg></span>
+      <div>
+        <div class="decoder-title">DECODER — Cara Membaca Kode Error</div>
+        <div class="decoder-sub">Masukkan kode error untuk analisa digit per digit (Unit · Command · Module · Error · Sensor)</div>
+      </div>
+    </div>
+    <button class="decoder-toggle" id="decToggleBtn">▼ Buka</button>
+  </div>
+  <div class="decoder-body" id="decBody">
+
+    <!-- Module type switch -->
+    <div class="dec-modsw">
+      <button class="active" id="decBrm860Btn" onclick="setDecMod('brm860',this)">BRM 860 (MX8600s 6L/YT)</button>
+      <button id="decBrm50Btn" onclick="setDecMod('brm50',this)">BRM 50 (MX8600s 710/YQ)</button>
+      <button id="decCdu30Btn" onclick="setDecMod('cdu30',this)">CDU 30</button>
+    </div>
+
+    <!-- Digit inputs -->
+    <div class="dec-input-row">
+      <div class="dec-input-box">
+        <div class="dec-label">1st<span>Unit</span></div>
+        <input class="dec-digit" id="d1" maxlength="1" oninput="onDigit(this,'d2')" placeholder="5">
+      </div>
+      <div class="dec-input-box">
+        <div class="dec-label">2nd<span>Command</span></div>
+        <input class="dec-digit" id="d2" maxlength="1" oninput="onDigit(this,'d3')" placeholder="3">
+      </div>
+      <div class="dec-input-box">
+        <div class="dec-label">3rd<span>Module</span></div>
+        <input class="dec-digit" id="d3" maxlength="1" oninput="onDigit(this,'d4')" placeholder="1">
+      </div>
+      <div class="dec-input-box">
+        <div class="dec-label">4th<span>Error Desc</span></div>
+        <input class="dec-digit" id="d4" maxlength="1" oninput="onDigit(this,'d5')" placeholder="0">
+      </div>
+      <div class="dec-input-box">
+        <div class="dec-label" id="d5LabelBox">5th<span id="d5Label">No Sensor/Motor</span></div>
+        <input class="dec-digit" id="d5" maxlength="1" oninput="onDigit(this,'d6')" placeholder="5">
+      </div>
+      <div class="dec-sep">|</div>
+      <div class="dec-input-box">
+        <div class="dec-label" style="color:var(--text-muted)">6th<span style="color:var(--text-muted)">Tambahan</span></div>
+        <input class="dec-digit opt" id="d6" maxlength="1" oninput="onDigit(this,'d7')" placeholder="2">
+      </div>
+      <div class="dec-input-box">
+        <div class="dec-label" style="color:var(--text-muted)">7th<span style="color:var(--text-muted)">Tambahan</span></div>
+        <input class="dec-digit opt" id="d7" maxlength="1" oninput="onDigit(this,null)" placeholder="3">
+      </div>
+      <button class="dec-btn" onclick="runDecoder()">🔍 Decode</button>
+      <button class="dec-clear" onclick="clearDecoder()">✕ Reset</button>
+    </div>
+
+    <!-- Result cards -->
+    <div class="dec-result" id="decResult"></div>
+
+    <!-- Search button -->
+    <div id="decSearchRow" style="display:none;margin-top:12px">
+      <button class="dec-search-link" onclick="searchFromDecoder()">
+        🔎 Cari kode ini di database error →
+      </button>
+    </div>
+
+  </div>
+</div>
+<!-- END DECODER -->
+
+  <div class="srow">
+    <div class="swrap">
+      <span class="sico"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></span>
+      <input type="text" id="srch" placeholder="Ketik kode error..." oninput="onSrch()" autocomplete="off" spellcheck="false">
+    </div>
+    <button class="history-btn" onclick="toggleHistory()" id="historyBtn">🕐 Riwayat</button>
+    <div class="export-wrap">
+      <button class="export-btn" onclick="toggleExportMenu()" id="exportBtn">📄 Export PDF ▾</button>
+      <div class="export-menu" id="exportMenu">
+        <button onclick="exportPDF('selected')" id="exportSelectedBtn" disabled>
+          ✅ Export kode terpilih
+          <small id="exportSelectedCount">Belum ada kode dipilih</small>
+        </button>
+        <button onclick="exportPDF('filtered')">
+          📋 Export hasil filter/pencarian saat ini
+          <small>Sesuai tabel yang sedang tampil</small>
+        </button>
+        <button onclick="exportPDF('all')">
+          📚 Export semua kode (modul aktif)
+          <small id="exportAllLabel">Seluruh data modul ini</small>
+        </button>
+      </div>
+    </div>
+    <div class="fgrp search-results-hidden" id="searchStatusFilters">
+      <button class="fbtn fa" id="fa" onclick="setF('all')">Semua</button>
+      <button class="fbtn" id="fr" onclick="setF('red')">🔴 WARNING</button>
+      <button class="fbtn" id="fam" onclick="setF('amber')">🟡 Periksa/Perbaiki</button>
+      <button class="fbtn" id="fg" onclick="setF('gray')">⚪ Software/Restart</button>
+    </div>
+    <div class="fgrp search-results-hidden" id="submodFgrp" style="display:none;margin-top:6px">
+      <span style="font-size:10px;color:var(--text-muted);align-self:center;margin-right:4px">SUB-MODUL:</span>
+      <button class="fbtn fa" id="fsub-all" onclick="setSubMod('all')">Semua</button>
+      <button class="fbtn" id="fsub-anti" onclick="setSubMod('Anti-Skimming')">Anti-Skimming</button>
+      <button class="fbtn" id="fsub-cam" onclick="setSubMod('Camera')">Camera</button>
+      <button class="fbtn" id="fsub-card" onclick="setSubMod('Card Reader')">Card Reader</button>
+      <button class="fbtn" id="fsub-epp" onclick="setSubMod('EPP')">EPP</button>
+      <button class="fbtn" id="fsub-fp" onclick="setSubMod('Finger Scanner')">Finger Scanner</button>
+      <button class="fbtn" id="fsub-nfc" onclick="setSubMod('NFC / RF Reader')">NFC/RF</button>
+      <button class="fbtn" id="fsub-pnc" onclick="setSubMod('PNC')">PNC</button>
+      <button class="fbtn" id="fsub-spr" onclick="setSubMod('Receipt Printer')">Printer</button>
+      <button class="fbtn" id="fsub-sht" onclick="setSubMod('Shutter')">Shutter</button>
+    </div>
+  </div>
+
+  <!-- HISTORY PANEL -->
+  <div class="history-wrap" id="historyPanel">
+    <div class="history-title">🕐 Riwayat Pencarian Terakhir <span id="historyClear" onclick="clearHistory()" style="float:right;cursor:pointer;color:var(--red);font-size:9px;font-weight:400">Hapus Semua</span></div>
+    <div class="history-list" id="historyList">
+      <span class="history-empty">Belum ada riwayat pencarian</span>
+    </div>
+  </div>
+
+  <div class="meta search-results-hidden" id="searchMeta">
+    <div class="rcnt" id="rcnt">Memuat data...</div>
+    <div style="font-size:11px;color:var(--text-muted)">Klik baris untuk detail &amp; cara penanggulangan lengkap</div>
+  </div>
+
+  <div class="sel-bar search-results-hidden" id="selBar">
+    <span>Terpilih: <b id="selCount">0</b> kode error</span>
+    <div class="sel-bar-spacer"></div>
+    <button class="sel-bar-btn export" onclick="exportPDF('selected')">📄 Export Terpilih</button>
+    <button class="sel-bar-btn clear" onclick="clearSelection()">✕ Batalkan Pilihan</button>
+  </div>
+
+  <div class="twrap search-results-hidden" id="searchTable">
+    <table class="tbl">
+      <thead><tr>
+        <th><input type="checkbox" class="head-chk" id="headChk" onclick="toggleSelectAllVisible(this)" title="Pilih semua baris di halaman ini"></th>
+        <th>Kode Error</th><th>Sub-Modul</th><th>Deskripsi Kerusakan</th>
+        <th>Analisa Penyebab</th><th>Cara Penanggulangan</th><th>Status</th>
+      </tr></thead>
+      <tbody id="tbody">
+        <tr><td colspan="6"><div class="ebox">
+          <span class="eico">⏳</span>
+          <div class="etxt">Memuat database error code...</div>
+        </div></td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="pgn search-results-hidden" id="pgn"></div>
+</div>
+
+<!-- Modal -->
+<div class="ovl" id="ovl" onclick="if(event.target===this)closeMdl()">
+  <div class="modal">
+    <div class="mhdr">
+      <div>
+        <div class="mcode" id="mCode"></div>
+        <div class="mmod" id="mMod"></div>
+      </div>
+      <button class="mcls" onclick="closeMdl()">✕</button>
+    </div>
+    <div class="mbdy">
+      <div class="msec">
+        <div class="slbl">Status Penanganan</div>
+        <div id="mBdg"></div>
+      </div>
+      <div class="msec">
+        <div class="slbl">Deskripsi Kerusakan</div>
+        <div class="scnt desc" id="mDsc"></div>
+      </div>
+      <div class="msec">
+        <div class="slbl">Analisa Penyebab</div>
+        <div class="scnt cause" id="mCse"></div>
+      </div>
+      <div class="msec">
+        <div class="slbl">Langkah Penanggulangan</div>
+        <div class="scnt action">
+          <ul class="steps" id="mSteps"></ul>
+        </div>
+      </div>
+      <div class="msec" id="mRefSec" style="display:none">
+        <div class="slbl" id="mRefLbl">Referensi Gambar</div>
+        <div class="refg" id="mRefGrid"></div>
+      </div>
+    </div>
+  </div>
+</div>
+<div id="refLb" onclick="if(event.target===this)refCloseLb()"><div class="lbbar"><span id="refLbT"></span><span style="display:flex;gap:8px"><button type="button" onclick="refZoom()">🔍 Perbesar / perkecil</button><button type="button" onclick="refCloseLb()">✕ Tutup</button></span></div><img id="refLbImg" alt="" onclick="refZoom()"></div>
+<div id="hwOvl" onclick="if(event.target===this)hwClose()"><div class="hwbox"><div class="hwhd"><span>📍 Posisi komponen BRM860</span><button type="button" onclick="hwClose()">✕ Tutup</button></div><div id="hwTabs"></div><div id="hwBody"></div></div></div>
+<script src="data/ref-images.js"></script>
+
+<script src="data/db-core.js"></script>
+<script src="data/db-brm860.js"></script>
+<script src="data/db-brm50.js"></script>
+<script src="data/db-extra.js"></script>
+<script src="data/db-cdu10.js"></script>
+<script src="data/db-cdu30.js"></script>
+<script src="data/db-cdu800.js"></script>
+<script src="js/app-main.js"></script>
+
+<!-- FIREBASE INIT (Firestore + Auth) -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
+  import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
+  import { getFirestore, collection, doc, setDoc, getDocs, getDoc, deleteDoc, writeBatch, onSnapshot, addDoc, serverTimestamp, query, where, orderBy, limit, startAfter } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
+
+  // >>> GANTI dengan firebaseConfig dari Firebase Console (Project Settings > General > Your apps) <<<
+  const firebaseConfig = {
+    apiKey: "AIzaSyDl4XpFIE2RFBhMtfUEpjAei9Ka-PsARog",
+    authDomain: "hyosung-errorcode.firebaseapp.com",
+    projectId: "hyosung-errorcode",
+    storageBucket: "hyosung-errorcode.firebasestorage.app",
+    messagingSenderId: "796346652712",
+    appId: "1:796346652712:web:c6d24eca55df2d72ac7d1d"
+  };
+
+  const fbApp  = initializeApp(firebaseConfig);
+  const fbAuth = getAuth(fbApp);
+  const fbDb   = getFirestore(fbApp);
+
+  // Jembatan ke script non-module lainnya di halaman ini
+  window.__fb = {
+    auth: fbAuth,
+    signIn: (email, pass) => signInWithEmailAndPassword(fbAuth, email, pass),
+    onAuthChange: (cb) => onAuthStateChanged(fbAuth, cb),
+    signOut: () => signOut(fbAuth),
+    claimUserDeviceSession: (uid, sessionId) => setDoc(doc(fbDb, 'user_device_sessions', uid), {
+      sessionId,
+      updatedAt: new Date().toISOString()
+    }),
+    watchUserDeviceSession: (uid, onChange, onError) => onSnapshot(doc(fbDb, 'user_device_sessions', uid), snap => {
+      onChange(snap.exists() ? snap.data() : null);
+    }, onError),
+    docRef: (mod, k) => doc(fbDb, 'errorcodes_overlay', mod, 'records', k),
+    setDoc,
+    getAiConfig: async () => {
+      const snap = await getDoc(doc(fbDb, 'app_config', 'smart_ai'));
+      return snap.exists() ? snap.data() : null;
+    },
+    saveAiConfig: (config) => setDoc(doc(fbDb, 'app_config', 'smart_ai'), {
+      apis: config.apis,
+      vision: config.vision,
+      updatedAt: new Date().toISOString()
+    }),
+    deleteAiConfig: () => deleteDoc(doc(fbDb, 'app_config', 'smart_ai')),
+    // ---- Penandaan admin untuk "Pencarian tanpa hasil" ----
+    getMissMarks: async () => {
+      const snap = await getDoc(doc(fbDb, 'app_config', 'usage_miss_marks'));
+      return snap.exists() ? (snap.data().marks || {}) : {};
+    },
+    setMissMark: (key, val) => setDoc(doc(fbDb, 'app_config', 'usage_miss_marks'), { marks: { [key]: val } }, { merge: true }),
+    isAdmin: async (uid) => {
+      try {
+        const snap = await getDoc(doc(fbDb, 'admins', uid));
+        return snap.exists();
+      } catch (e) { console.warn('Gagal cek status admin:', e); return false; }
+    },
+    getAllDocs: async (mod) => {
+      const snap = await getDocs(collection(fbDb, 'errorcodes_overlay', mod, 'records'));
+      const out = [];
+      snap.forEach(d => out.push(d.data()));
+      return out;
+    },
+    getPortalFiles: async () => {
+      const snap = await getDocs(collection(fbDb, 'portal_ts'));
+      return snap.docs.map(d => ({id:d.id,...d.data()}));
+    },
+    savePortalFile: (id, file) => setDoc(doc(fbDb, 'portal_ts', id), file),
+    deletePortalFile: (id) => deleteDoc(doc(fbDb, 'portal_ts', id)),
+    // ---- Pencatatan penggunaan (usage_events) ----
+    logUsage: (e) => {
+      const u = fbAuth.currentUser; if (!u) return;
+      const wib = new Date(Date.now() + 7*3600e3).toISOString().slice(0,10);
+      addDoc(collection(fbDb, 'usage_events'), Object.assign({}, e, {
+        uid: u.uid, email: u.email || '', day: wib, ts: serverTimestamp(),
+        expireAt: new Date(Date.now() + 30*864e5)   // untuk Firestore TTL (hapus otomatis 30 hari)
+      })).catch(() => {});   // gagal log tidak boleh mengganggu FSE
+    },
+    // Hapus otomatis laporan > 30 hari. Jalan paling banyak 1x/hari (dipicu admin yang login).
+    // ---- Eskalasi ke TS (hanya 5 data wajib + TS terpilih; disimpan 14 hari) ----
+    logEscalation: (e) => {
+      const u = fbAuth.currentUser; if (!u) return;
+      const wib = new Date(Date.now() + 7*3600e3).toISOString().slice(0,10);
+      const c = v => String(v || '').slice(0, 300);
+      addDoc(collection(fbDb, 'ts_escalations'), {
+        ticket: c(e.ticket), name: c(e.name), area: c(e.area), machineId: c(e.machineId), bank: c(e.bank), location: c(e.location), brand: c(e.brand), type: c(e.type), errorCode: c(e.errorCode), tsName: c(e.tsName),
+        uid: u.uid, email: u.email || '', day: wib, ts: serverTimestamp(),
+        expireAt: new Date(Date.now() + 14*864e5)   // Firestore TTL (hapus otomatis 14 hari)
+      }).catch(() => {});
+    },
+    getEscalations: async (fromDay, toDay) => {
+      const snap = await getDocs(query(collection(fbDb, 'ts_escalations'), where('day', '>=', fromDay), where('day', '<=', toDay), orderBy('day'), limit(5000)));
+      return snap.docs.map(d => d.data());
+    },
+    purgeOldEscalations: async (keepDays) => {
+      keepDays = keepDays || 14;
+      const today = new Date(Date.now() + 7*3600e3).toISOString().slice(0,10);
+      const cutoff = new Date(Date.now() + 7*3600e3 - (keepDays-1)*864e5).toISOString().slice(0,10);
+      const metaRef = doc(fbDb, 'app_config', 'ts_escalation_cleanup');
+      try { const m = await getDoc(metaRef); if (m.exists() && m.data().lastRun === today) return 0; } catch (e) { return 0; }
+      let total = 0;
+      for (let i = 0; i < 20; i++) {
+        const snap = await getDocs(query(collection(fbDb, 'ts_escalations'), where('day', '<', cutoff), limit(400)));
+        if (snap.empty) break;
+        const b = writeBatch(fbDb);
+        snap.docs.forEach(d => b.delete(d.ref));
+        await b.commit();
+        total += snap.size;
+        if (snap.size < 400) break;
+      }
+      await setDoc(metaRef, { lastRun: today, deleted: total, cutoffDay: cutoff });
+      return total;
+    },
+    purgeOldUsage: async (keepDays) => {
+      keepDays = keepDays || 30;
+      const today = new Date(Date.now() + 7*3600e3).toISOString().slice(0,10);
+      const cutoff = new Date(Date.now() + 7*3600e3 - (keepDays-1)*864e5).toISOString().slice(0,10);
+      const metaRef = doc(fbDb, 'app_config', 'usage_cleanup');
+      try { const m = await getDoc(metaRef); if (m.exists() && m.data().lastRun === today) return 0; } catch (e) { return 0; }
+      let total = 0;
+      for (let i = 0; i < 60; i++) {
+        const snap = await getDocs(query(collection(fbDb, 'usage_events'), where('day', '<', cutoff), limit(400)));
+        if (snap.empty) break;
+        const b = writeBatch(fbDb);
+        snap.docs.forEach(d => b.delete(d.ref));
+        await b.commit();
+        total += snap.size;
+        if (snap.size < 400) break;
+      }
+      await setDoc(metaRef, { lastRun: today, deleted: total, cutoffDay: cutoff });
+      return total;
+    },
+    getUsage: async (fromDay, toDay, maxTotal) => {
+      // Firestore membatasi 10.000 dokumen per query -> ambil per halaman 5.000
+      maxTotal = maxTotal || 100000;
+      const out = []; let last = null;
+      while (out.length < maxTotal) {
+        const parts = [collection(fbDb, 'usage_events'),
+          where('day', '>=', fromDay), where('day', '<=', toDay), orderBy('day')];
+        if (last) parts.push(startAfter(last));
+        parts.push(limit(5000));
+        const snap = await getDocs(query.apply(null, parts));
+        snap.docs.forEach(d => out.push(d.data()));
+        if (snap.docs.length < 5000) break;
+        last = snap.docs[snap.docs.length - 1];
+      }
+      return out;
+    }
+  };
+
+  window.dispatchEvent(new Event('fb-ready'));
+</script>
+
+
+<div id="tsOvl" role="dialog" aria-modal="true" aria-label="Hubungi Technical Support" onclick="if(event.target===this)tsClose()">
+ <div class="tsx">
+  <div class="tsx-h"><h3>📞 Hubungi Technical Support</h3><button class="tsx-x" onclick="tsClose()" aria-label="Tutup">✕</button></div>
+  <div class="tsx-b">
+   <div class="tsx-step" id="tsStepLbl">Langkah 1 dari 3: Salin format</div>
+   <div class="tsx-pg" id="tsStep1">
+   <div class="tsx-warn">
+    <b>Sebelum menghubungi TS, salin format ini dan lengkapi file pendukung.</b> Nomor Tiket dibuat otomatis saat Anda klik Salin Format.
+    <div class="tsx-pre" id="tsFmt"></div>
+    <button type="button" class="tsx-btn sec" id="tsCopyBtn" onclick="tsCopyFmt(this)">📋 Salin Format</button>
+    <ul>
+     <li><b>Foto</b>: kondisi mesin, layar, dan print history.</li>
+     <li><b>Log</b>: EJ Log dan Log Mesin.</li>
+     <li>Kirim <b>Gejala</b>, <b>Sudah di Coba</b>, foto, dan log di chat WhatsApp setelah pesan terbuka.</li>
+    </ul>
+   </div>
+   <div class="tsx-hint" id="tsHint">Klik <b>Salin Format</b> dulu, baru lanjut ke Data Wajib.</div>
+   <button type="button" class="tsx-btn" id="tsNext" disabled onclick="tsStep(2)">Lanjut ke Data Wajib →</button>
+   </div>
+   <div class="tsx-pg" id="tsStep2" style="display:none">
+   <button type="button" class="tsx-btn sec tsx-back" onclick="tsStep(1)">← Kembali</button>
+   <p class="tsx-sec">Data wajib (isi semua untuk lanjut ke pilih TS)</p>
+   <div class="tsx-tk">Nomor Tiket: <b id="tsTk">-</b></div>
+   <div class="tsx-f" id="tsForm">
+    <label>Nama<input id="tsN" autocomplete="name" placeholder="Nama lengkap" oninput="tsCheck()"></label>
+    <label>Area Kerja<input id="tsA" placeholder="Contoh: Bekasi" oninput="tsCheck()"></label>
+    <label>ID Mesin<input id="tsI" placeholder="Contoh: ATM 1234" oninput="tsCheck()"></label>
+    <label>Customer Bank<input id="tsB" placeholder="Contoh: Bank Mandiri" oninput="tsCheck()"></label>
+    <label class="full">Lokasi<input id="tsL" placeholder="Alamat / nama lokasi mesin" oninput="tsCheck()"></label>
+    <label>Brand Mesin<input id="tsM" placeholder="Contoh: Hyosung / NCR / Wincor" oninput="tsCheck()"></label>
+    <label>Tipe Mesin<input id="tsY" placeholder="Contoh: MX8600S / 6622" oninput="tsCheck()"></label>
+    <label class="full">Kode Error<small>Lengkap, dari layar atau struk</small><input id="tsK" placeholder="Contoh: 5BRGL00" oninput="tsCheck()"></label>
+   </div>
+   <div class="tsx-miss" id="tsMiss"></div>
+   <button type="button" class="tsx-btn" id="tsNext2" disabled onclick="tsStep(3)">Lanjut ke Pilih TS →</button>
+   </div>
+   <div class="tsx-pg" id="tsStep3" style="display:none">
+   <button type="button" class="tsx-btn sec tsx-back" onclick="tsStep(2)">← Ubah Data</button>
+   <div class="tsx-sum" id="tsSum"></div>
+   <p class="tsx-sec">Pilih Technical Support</p>
+   <div class="tsx-list" id="tsList"></div>
+   <div class="tsx-done" id="tsDone"></div>
+   <p class="tsx-note">Yang tersimpan di laporan hanya data wajib (Nomor Tiket sampai Kode Error) dan TS yang dipilih. Data eskalasi otomatis dihapus setelah 14 hari.</p>
+   </div>
+  </div>
+ </div>
+</div>
+
+<script id="tsEscScript">
+const TS_CONTACTS=[
+ {n:'Iman Nurdiansyah',u:'https://wa.me/628567348891'},
+ {n:'Farid Darmawan',u:'https://wa.me/6289654832305'},
+ {n:'Mukmin Laska Dinata',u:'https://wa.me/6282110956204'}
+];
+const TS_FIELDS=[['tsN','Nama'],['tsA','Area Kerja'],['tsI','ID Mesin'],['tsB','Customer Bank'],['tsL','Lokasi'],['tsM','Brand Mesin'],['tsY','Tipe Mesin'],['tsK','Kode Error']];
+function tsTicket(){
+  if(window.__tsTicket)return window.__tsTicket;
+  const d=new Date(Date.now()+7*3600e3).toISOString().slice(0,10).replace(/-/g,'');
+  const ch='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';let r='';
+  try{const u=new Uint8Array(4);crypto.getRandomValues(u);u.forEach(x=>r+=ch[x%ch.length]);}catch(e){for(let i=0;i<4;i++)r+=ch[Math.floor(Math.random()*ch.length)];}
+  return window.__tsTicket='TS-'+d+'-'+r;
+}
+function tsFormat(withTicket){
+  return 'Nomor Tiket : '+(withTicket?tsTicket():'(muncul otomatis setelah klik Salin Format)')+'\nNama : \nArea Kerja : \nID Mesin : \nCustomer Bank : \nLokasi : \nBrand Mesin : \nTipe Mesin : \nKode Error : \nGejala : apa yang terjadi, sejak kapan\nSudah di Coba : langkah dari portal\nFoto : (kondisi mesin, layar, print history)\nLog : (EJ Log dan Log Mesin)';
+}
+function tsEl(id){return document.getElementById(id);}
+function tsHasQA(){try{return typeof chatHist!=='undefined'&&chatHist.some(m=>m.r==='a')&&chatHist.some(m=>m.r==='u');}catch(e){return false;}}
+function tsSync(){const b=tsEl('chTsBtn');if(b)b.style.display=tsHasQA()?'':'none';}
+function tsVal(id){return String((tsEl(id)||{}).value||'').trim();}
+function tsLastCode(){
+  try{
+    ckBuild();
+    const users=(typeof chatHist!=='undefined'?chatHist:[]).filter(m=>m.r==='u').slice(-3).reverse();
+    for(const m of users){for(const c of ckCodes(m.t||'')){if(c.length>=5&&/\d/.test(c)&&CK.byCode.has(c))return c;}}
+  }catch(e){}
+  return '';
+}
+function tsStep(n){
+  if(n>=2&&!window.__tsCopied){n=1;}
+  if(n===3&&tsMissing().length){n=2;}
+  [1,2,3].forEach(k=>{const e=tsEl('tsStep'+k);if(e)e.style.display=k===n?'flex':'none';});
+  tsEl('tsStepLbl').textContent=n===1?'Langkah 1 dari 3: Salin format':n===2?'Langkah 2 dari 3: Isi data wajib':'Langkah 3 dari 3: Pilih TS';
+  if(n===3){
+    tsEl('tsSum').textContent='Nomor Tiket: '+tsTicket()+'\nNama: '+tsVal('tsN')+'\nArea Kerja: '+tsVal('tsA')+'\nID Mesin: '+tsVal('tsI')+'\nCustomer Bank: '+tsVal('tsB')+'\nLokasi: '+tsVal('tsL')+'\nBrand Mesin: '+tsVal('tsM')+'\nTipe Mesin: '+tsVal('tsY')+'\nKode Error: '+tsVal('tsK');
+    tsEl('tsDone').textContent='';
+    document.querySelectorAll('#tsList .tsx-ts').forEach(b=>{b.disabled=false;});
+  }
+  const o=tsEl('tsOvl');if(o)o.scrollTop=0;
+  if(n===2)setTimeout(()=>{const f=tsEl('tsN');if(f&&!tsVal('tsN'))f.focus();},60);
+}
+function tsCopied(){
+  window.__tsCopied=true;
+  const n=tsEl('tsNext');if(n)n.disabled=false;
+  const tk=tsEl('tsTk');if(tk)tk.textContent=tsTicket();
+  const pf=tsEl('tsFmt');if(pf)pf.textContent=tsFormat(true);
+  const h=tsEl('tsHint');if(h){h.classList.add('ok');h.innerHTML='✓ Format sudah disalin. Lanjutkan ke Data Wajib.';}
+}
+function tsOpen(){
+  if(!tsHasQA()){alert('Fitur Hubungi TS aktif setelah Anda bertanya ke Clara dan mendapat jawaban. Silakan tanyakan masalah Anda dulu.');return;}
+  window.__tsCopied=false;window.__tsTicket='';
+  tsEl('tsTk').textContent='-';
+  tsEl('tsNext').disabled=true;
+  const h=tsEl('tsHint');h.classList.remove('ok');h.innerHTML='Klik <b>Salin Format</b> dulu, baru lanjut ke Data Wajib.';
+  tsStep(1);
+  tsEl('tsFmt').textContent=tsFormat(false);
+  try{const sv=JSON.parse(localStorage.getItem('tsEscDraft')||'{}');if(sv.n&&!tsVal('tsN'))tsEl('tsN').value=sv.n;if(sv.a&&!tsVal('tsA'))tsEl('tsA').value=sv.a;}catch(e){}
+  if(!tsVal('tsK')){const c=tsLastCode();if(c)tsEl('tsK').value=c;}
+  const list=tsEl('tsList');
+  if(!list.children.length){
+    TS_CONTACTS.forEach((c,i)=>{const b=document.createElement('button');b.type='button';b.className='tsx-ts';b.disabled=true;b.dataset.i=i;
+      b.innerHTML='<span></span><em>WhatsApp ↗</em>';b.firstChild.textContent='💬 '+c.n;b.onclick=()=>tsGo(i);list.appendChild(b);});
+  }
+  tsEl('tsOvl').style.display='flex';tsCheck();
+}
+function tsClose(){tsEl('tsOvl').style.display='none';}
+function tsMissing(){return TS_FIELDS.filter(f=>tsVal(f[0]).length<2).map(f=>f[1]);}
+function tsCheck(){
+  const miss=tsMissing();
+  TS_FIELDS.forEach(f=>{const el=tsEl(f[0]);if(el)el.classList.toggle('bad',false);});
+  document.querySelectorAll('#tsList .tsx-ts').forEach(b=>{b.disabled=miss.length>0;});
+  const n2=tsEl('tsNext2');if(n2)n2.disabled=miss.length>0;
+  tsEl('tsMiss').textContent=miss.length?('Lengkapi dulu: '+miss.join(', ')+'.'):'';
+}
+function tsCopyFmt(btn){
+  const t=tsFormat(true);const done=()=>{const o=btn.textContent;btn.textContent='✓ Format tersalin';setTimeout(()=>btn.textContent=o,1800);tsCopied();};
+  try{navigator.clipboard.writeText(t).then(done,()=>tsCopyFallback(t,done));}catch(e){tsCopyFallback(t,done);}
+  setTimeout(()=>{if(!window.__tsCopied){tsCopied();}},1500);
+}
+function tsCopyFallback(t,done){try{const a=document.createElement('textarea');a.value=t;a.style.cssText='position:fixed;opacity:0';document.body.appendChild(a);a.select();document.execCommand('copy');a.remove();done();}catch(e){}}
+function tsGo(i){
+  const miss=tsMissing();
+  if(!window.__tsCopied){tsStep(1);return;}
+  if(miss.length){tsCheck();alert('Lengkapi dulu data wajib: '+miss.join(', ')+'.');return;}
+  const c=TS_CONTACTS[i];if(!c)return;
+  const d={ticket:tsTicket(),name:tsVal('tsN'),area:tsVal('tsA'),machineId:tsVal('tsI'),bank:tsVal('tsB'),location:tsVal('tsL'),brand:tsVal('tsM'),type:tsVal('tsY'),errorCode:tsVal('tsK'),tsName:c.n};
+  try{localStorage.setItem('tsEscDraft',JSON.stringify({n:d.name,a:d.area}));}catch(e){}
+  try{if(window.__fb&&window.__fb.logEscalation)window.__fb.logEscalation(d);}catch(e){}
+  const msg='Halo '+c.n+', saya butuh bantuan Technical Support.\n\n'
+   +'Nomor Tiket : '+d.ticket+'\nNama : '+d.name+'\nArea Kerja : '+d.area+'\nID Mesin : '+d.machineId+'\nCustomer Bank : '+d.bank+'\nLokasi : '+d.location+'\nBrand Mesin : '+d.brand+'\nTipe Mesin : '+d.type+'\nKode Error : '+d.errorCode
+   +'\nGejala : \nSudah di Coba : \nFoto : (saya lampirkan)\nLog : (EJ Log dan Log Mesin saya lampirkan)';
+  window.open(c.u+'?text='+encodeURIComponent(msg),'_blank','noopener');
+  const m=tsEl('tsDone');m.textContent='WhatsApp dibuka. Jangan lupa lengkapi Gejala, Sudah di Coba, foto, dan log (EJ Log dan Log Mesin) di chat.';
+}
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&tsEl('tsOvl')&&tsEl('tsOvl').style.display==='flex')tsClose();});
+</script>
+
+<!-- ADMIN LOGIN OVERLAY -->
+<div id="adminLoginOvl" style="display:none;position:fixed;inset:0;background:rgba(21,101,192,.5);z-index:500;backdrop-filter:blur(6px);align-items:center;justify-content:center" onclick="if(event.target===this)closeAdminLogin()">
+  <div style="background:#fff;border-radius:16px;padding:32px 36px;width:100%;max-width:380px;box-shadow:0 24px 80px rgba(0,0,0,.2);position:relative">
+    <button onclick="closeAdminLogin()" style="position:absolute;top:14px;right:16px;background:none;border:none;font-size:20px;cursor:pointer;color:#999">×</button>
+    <div style="text-align:center;margin-bottom:24px">
+      <div style="font-size:36px;margin-bottom:8px">🔐</div>
+      <div style="font-size:17px;font-weight:700;color:#1565C0">Admin Login</div>
+      <div style="font-size:12px;color:#8A96B8;margin-top:4px">Masuk dengan akun Admin (email &amp; password)</div>
+    </div>
+    <input id="adminEmailInput" type="email" placeholder="Email Admin" style="width:100%;box-sizing:border-box;padding:11px 14px;border:2px solid #C5D0F0;border-radius:9px;font-size:14px;outline:none;font-family:var(--ui-font);transition:border .2s;margin-bottom:8px" onfocus="this.style.borderColor='#1565C0'" onblur="this.style.borderColor='#C5D0F0'" onkeydown="if(event.key==='Enter')document.getElementById('adminPassInput').focus()">
+    <input id="adminPassInput" type="password" placeholder="Password Admin" style="width:100%;box-sizing:border-box;padding:11px 14px;border:2px solid #C5D0F0;border-radius:9px;font-size:14px;outline:none;font-family:var(--ui-font);transition:border .2s;margin-bottom:6px" onfocus="this.style.borderColor='#1565C0'" onblur="this.style.borderColor='#C5D0F0'" onkeydown="if(event.key==='Enter')checkAdminPass()">
+    <div id="adminPassErr" style="color:#D32F2F;font-size:11px;margin-bottom:10px;display:none;padding:0 2px">❌ Password salah. Coba lagi.</div>
+    <button onclick="checkAdminPass()" style="width:100%;padding:12px;background:#1565C0;color:#fff;border:none;border-radius:9px;font-size:14px;font-weight:700;cursor:pointer;font-family:var(--ui-font);transition:opacity .15s" onmouseover="this.style.opacity='.85'" onmouseout="this.style.opacity='1'">Masuk</button>
+  </div>
+</div>
+
+<!-- ADMIN PANEL OVERLAY -->
+<div id="adminPanelOvl" style="display:none;position:fixed;inset:0;background:rgba(21,101,192,.45);z-index:500;backdrop-filter:blur(4px);align-items:center;justify-content:center;padding:20px" onclick="if(event.target===this)closeAdminPanel()">
+  <div style="background:#fff;border-radius:16px;width:100%;max-width:780px;max-height:90vh;overflow-y:auto;box-shadow:0 24px 80px rgba(0,0,0,.2)">
+    <!-- Header -->
+    <div style="background:linear-gradient(135deg,#1565C0,#0D47A1);padding:20px 24px;border-radius:16px 16px 0 0;display:flex;justify-content:space-between;align-items:center">
+      <div>
+        <div style="font-size:16px;font-weight:700;color:#fff"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px;vertical-align:-3px;margin-right:8px;flex-shrink:0"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>Admin Panel</div>
+        <div style="font-size:11px;color:rgba(255,255,255,.7);margin-top:2px">Tambah atau Edit Database Error Code</div>
+      </div>
+      <button onclick="closeAdminPanel()" style="background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.3);border-radius:8px;color:#fff;padding:6px 14px;font-size:12px;cursor:pointer;font-family:var(--ui-font)">✕ Tutup</button>
+    </div>
+    <!-- Content -->
+    <div style="padding:24px">
+      <div id="adminTabsRow">
+      <div id="adminPanelTabs" style="display:flex;gap:8px;margin-bottom:18px;border-bottom:1px solid #D5DCEA">
+        <button type="button" onclick="setAdminPanelTab('portal')" class="admin-section-tab active">Portal TS</button>
+        <button type="button" onclick="setAdminPanelTab('errors')" class="admin-section-tab">Database Error Code</button>
+        <button type="button" onclick="setAdminPanelTab('usage')" class="admin-section-tab">Laporan Penggunaan</button>
+        <button type="button" onclick="setAdminPanelTab('ai')" class="admin-section-tab">Konfigurasi AI Vision</button>
+      </div>
+      </div>
+      <div id="adminPanelContent">
+
+      <section id="usageReportSection" style="display:none;margin-bottom:20px">
+        <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end;margin-bottom:12px">
+          <label style="font-size:11px;font-weight:600;color:#4A5680">Dari
+            <input type="date" id="usageFrom" style="display:block;margin-top:4px;padding:8px;border:1px solid #A8B8E8;border-radius:6px;font:inherit"></label>
+          <label style="font-size:11px;font-weight:600;color:#4A5680">Sampai
+            <input type="date" id="usageTo" style="display:block;margin-top:4px;padding:8px;border:1px solid #A8B8E8;border-radius:6px;font:inherit"></label>
+          <button type="button" class="usage-btn" onclick="usageSetRange(7)">7 hari</button>
+          <button type="button" class="usage-btn" onclick="usageSetRange(30)">30 hari</button>
+          <button type="button" class="usage-btn usage-primary" id="usageLoadBtn" onclick="usageLoadReport()">Muat Laporan</button>
+          <button type="button" class="usage-btn usage-primary" id="usageXlsBtn" onclick="usageExportExcel()" style="display:none">⬇ Ekspor Excel</button>
+          <button type="button" class="usage-btn" id="usageCsvBtn" onclick="usageExportCsv()" style="display:none">⬇ CSV</button>
+        </div>
+        <div style="margin-bottom:8px"><input id="usageEmailFilter" type="search" placeholder="Filter email FSE (opsional)..." oninput="usageRender()" style="width:100%;box-sizing:border-box;padding:9px;border:1px solid #A8B8E8;border-radius:6px;font:inherit"></div>
+        <div style="margin-bottom:12px"><label style="font-size:11px;font-weight:600;color:#4A5680">Akun admin/non-FSE yang disembunyikan dari laporan (pisahkan dengan koma)
+          <input id="usageExcludeEmails" type="text" onchange="usageSaveExclude()" placeholder="admin1@perusahaan.co.id, admin2@..." style="display:block;margin-top:4px;width:100%;box-sizing:border-box;padding:9px;border:1px solid #A8B8E8;border-radius:6px;font:inherit"></label></div>
+        <div id="usageStatus" style="font-size:12px;color:#5F6B7A;margin-bottom:12px">Pilih rentang tanggal lalu klik Muat Laporan. Data laporan disimpan 30 hari terakhir, lebih lama dihapus otomatis setiap hari.</div>
+        <div id="usageReportBody"></div>
+      </section>
+      <section id="portalAdminSection" style="margin-bottom:20px;padding:16px;border:1px solid #C5D0F0;border-radius:9px;background:#F8FAFF">
+        <div style="font-size:14px;font-weight:700;color:#1A1F36;margin-bottom:12px">Kelola File Portal TS</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+          <label style="font-size:11px;font-weight:600;color:#4A5680">Menu
+            <select id="portalAdminCategory" onchange="togglePortalAdminBank()" style="display:block;width:100%;margin-top:4px;padding:9px;border:1px solid #A8B8E8;border-radius:6px;font:inherit;color:#1A1F36;background:#fff">
+              <option value="software">Software</option><option value="modul-atm">Modul ATM</option><option value="tools">Tools</option>
+            </select>
+          </label>
+          <label id="portalAdminBankWrap" style="font-size:11px;font-weight:600;color:#4A5680">Bank
+            <select id="portalAdminBank" style="display:block;width:100%;margin-top:4px;padding:9px;border:1px solid #A8B8E8;border-radius:6px;font:inherit;color:#1A1F36;background:#fff">
+              <option>BNI</option><option>Mandiri</option><option>BRI</option><option>BTN</option><option>Bank Sumsel</option><option>Jalin</option><option>Bank Lainnya</option>
+            </select>
+          </label>
+          <label id="portalAdminModuleCategoryWrap" style="display:none;font-size:11px;font-weight:600;color:#4A5680">Kategori Modul ATM
+            <select id="portalAdminModuleCategory" style="display:block;width:100%;margin-top:4px;padding:9px;border:1px solid #A8B8E8;border-radius:6px;font:inherit;color:#1A1F36;background:#fff">
+              <option value="">Pilih kategori</option>
+            </select>
+          </label>
+        </div>
+        <div id="portalAdminModuleCategoryManager" style="display:none;margin-bottom:12px;padding:10px;border:1px solid #D5DCEA;border-radius:6px;background:#fff">
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <input id="portalAdminNewModuleCategory" maxlength="60" placeholder="Nama kategori baru" style="flex:1;min-width:180px;padding:8px;border:1px solid #A8B8E8;border-radius:6px;font:inherit">
+            <button type="button" onclick="addPortalModuleCategory()" style="padding:8px 12px;border:0;border-radius:6px;background:#1565C0;color:#fff;font-weight:700;cursor:pointer">Tambah Kategori</button>
+          </div>
+          <div id="portalAdminModuleCategoryList" style="margin-top:8px;font-size:11px;color:#5F6B7A"></div>
+        </div>
+        <label style="display:block;font-size:11px;font-weight:600;color:#4A5680;margin-bottom:10px">Judul file *
+          <input id="portalAdminTitle" maxlength="120" style="display:block;width:100%;margin-top:4px;padding:9px;border:1px solid #A8B8E8;border-radius:6px;font:inherit">
+        </label>
+        <label style="display:block;font-size:11px;font-weight:600;color:#4A5680;margin-bottom:10px">Deskripsi
+          <textarea id="portalAdminDescription" maxlength="1000" rows="2" style="display:block;width:100%;margin-top:4px;padding:9px;border:1px solid #A8B8E8;border-radius:6px;font:inherit;resize:vertical"></textarea>
+        </label>
+        <label style="display:block;font-size:11px;font-weight:600;color:#4A5680;margin-bottom:10px">Link Download * <span style="font-weight:400;color:#8A96B8">(Google Drive, OneDrive, Dropbox, MediaFire, atau link lain)</span>
+          <input id="portalAdminUrl" type="url" placeholder="https://..." style="display:block;width:100%;margin-top:4px;padding:9px;border:1px solid #A8B8E8;border-radius:6px;font:inherit">
+        </label>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <button type="button" onclick="savePortalFile()" id="portalAdminSaveBtn" style="padding:9px 16px;border:0;border-radius:6px;background:#1B7F3A;color:#fff;font-weight:700;cursor:pointer">Simpan File</button>
+          <button type="button" onclick="resetPortalAdminForm()" style="padding:9px 16px;border:1px solid #A8B8E8;border-radius:6px;background:#fff;color:#4A5680;cursor:pointer">Batal Edit</button>
+          <span id="portalAdminStatus" role="status" style="font-size:11px;color:#4A5680"></span>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px;align-items:end">
+          <label style="flex:2 1 220px;font-size:11px;font-weight:600;color:#4A5680">Search file
+            <input id="portalAdminFileSearch" type="search" placeholder="Cari judul atau deskripsi..." oninput="filterPortalAdminFiles(true)" style="display:block;box-sizing:border-box;width:100%;margin-top:4px;padding:9px;border:1px solid #A8B8E8;border-radius:6px;font:inherit">
+          </label>
+          <label style="flex:1 1 140px;font-size:11px;font-weight:600;color:#4A5680">Filter menu
+            <select id="portalAdminFileCategoryFilter" onchange="filterPortalAdminFiles(true)" style="display:block;box-sizing:border-box;width:100%;margin-top:4px;padding:9px;border:1px solid #A8B8E8;border-radius:6px;font:inherit;background:#fff">
+              <option value="all">Semua menu</option><option value="software">Software</option><option value="modul-atm">Modul ATM</option><option value="tools">Tools</option>
+            </select>
+          </label>
+          <label style="flex:1 1 150px;font-size:11px;font-weight:600;color:#4A5680">Filter bank/kategori
+            <select id="portalAdminFileBankFilter" onchange="filterPortalAdminFiles(true)" style="display:block;box-sizing:border-box;width:100%;margin-top:4px;padding:9px;border:1px solid #A8B8E8;border-radius:6px;font:inherit;background:#fff">
+              <option value="all">Semua bank/kategori</option>
+            </select>
+          </label>
+          <label style="flex:1 1 110px;font-size:11px;font-weight:600;color:#4A5680">Maks. baris
+            <select id="portalAdminFileMaxRows" onchange="filterPortalAdminFiles(true)" style="display:block;box-sizing:border-box;width:100%;margin-top:4px;padding:9px;border:1px solid #A8B8E8;border-radius:6px;font:inherit;background:#fff">
+              <option value="10">10</option><option value="25">25</option><option value="50">50</option><option value="100">100</option>
+            </select>
+          </label>
+        </div>
+        <div id="portalAdminFileCount" aria-live="polite" style="margin-top:8px;font-size:11px;color:#5F6B7A"></div>
+        <div id="portalAdminFilePageWrap" style="display:none;margin-top:8px">
+          <label style="font-size:11px;font-weight:600;color:#4A5680;display:inline-block">Pilih halaman
+            <select id="portalAdminFilePageSelect" onchange="filterPortalAdminFiles()" style="display:block;box-sizing:border-box;margin-top:4px;padding:8px 10px;border:1px solid #A8B8E8;border-radius:6px;font:inherit;background:#fff;min-width:120px"></select>
+          </label>
+        </div>
+        <div id="portalAdminFileList" style="margin-top:12px"></div>
+      </section>
+
+      <!-- Brand switcher -->
+      <div class="adm-sel-row">
+        <div class="adm-sel-col"><label class="adm-sel-lbl" for="admBrandSel">Merek</label>
+          <select id="admBrandSel" class="adm-sel" onchange="adminBrand(this.value)">
+            <option value="hyosung">Hyosung</option><option value="ncr">NCR (M-Status)</option><option value="wincor">Wincor</option>
+          </select></div>
+        <div class="adm-sel-col" id="admModWrap"><label class="adm-sel-lbl" for="admModSel">Modul</label>
+          <select id="admModSel" class="adm-sel" onchange="admModChange(this.value)"></select></div>
+      </div>
+      <div id="adminBrandWrap"><div id="adminBrandBar" style="display:flex;flex-direction:row;gap:0;margin-bottom:18px;border:1.5px solid #C5D0F0;border-radius:9px;overflow:hidden">
+        <button type="button" data-ab="hyosung" onclick="adminBrand('hyosung')" class="adm-brand-btn on" style="flex:1 1 0%;width:auto">Hyosung</button>
+        <button type="button" data-ab="ncr" onclick="adminBrand('ncr')" class="adm-brand-btn" style="flex:1 1 0%;width:auto">NCR (M-Status)</button>
+        <button type="button" data-ab="wincor" onclick="adminBrand('wincor')" class="adm-brand-btn" style="flex:1 1 0%;width:auto">Wincor</button>
+      </div></div>
+      <!-- Tab selector -->
+      <div id="hyoModSel">
+        <label style="font-size:12px;font-weight:600;color:#4A5680;display:block;margin-bottom:6px">Pilih Modul:</label>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button onclick="setAdminMod('brm860',this)" class="admin-mod-btn admin-mod-active">BRM 860</button>
+          <button onclick="setAdminMod('brm50',this)" class="admin-mod-btn">BRM 50</button>
+          <button onclick="setAdminMod('cdu10',this)" class="admin-mod-btn">CDU 10</button>
+          <button onclick="setAdminMod('cdu30',this)" class="admin-mod-btn">CDU 30</button>
+          <button onclick="setAdminMod('cdu800',this)" class="admin-mod-btn">CDU 800</button>
+          <button onclick="setAdminMod('extra',this)" class="admin-mod-btn">Modul Lainnya</button>
+        </div>
+      </div>
+
+      <div id="adminAiSection" style="margin-bottom:20px">
+                <div id="adminAiSettings" style="display:block;margin-top:0;padding:16px;background:#F0F4FF;border:1px solid #C5D0F0;border-radius:8px">
+          <div style="font-size:11px;color:#4A5680;margin-bottom:8px">Maksimal 99 API (<b id="adminAiCount">0 / 99 API</b>). Sistem beralih otomatis ke API berikutnya jika key ditolak, kuota/rate limit habis, server provider bermasalah, atau provider tidak dapat dijangkau dari browser (maksimal 15 API dicoba per pertanyaan). Provider gratis: OpenRouter (model berakhiran :free), Groq, Cloudflare Workers AI, Mistral, Cerebras, SambaNova, Hugging Face, atau alamat OpenAI-compatible sendiri. Urutan baris = urutan prioritas. Kolom paling kanan terisi otomatis: Account ID untuk Cloudflare, Base URL untuk OpenAI-compatible.</div>
+          <div style="display:grid;grid-template-columns:1.25fr 1.25fr 1.3fr 1fr auto;gap:8px;font-size:10px;font-weight:700;color:#4A5680"><span>Provider</span><span>Model ID</span><span>API Key</span><span>Data tambahan</span><span style="min-width:48px"></span></div>
+          <div id="adminAiApiList" style="max-height:460px;overflow-y:auto"></div>
+          <button type="button" id="adminAiAddApiBtn" onclick="addAdminAiApi()" style="margin-top:10px;padding:7px 12px;border:1px solid #1565C0;border-radius:6px;background:#fff;color:#1565C0;font-size:11px;font-weight:700;cursor:pointer">+ Tambah API</button>
+          <button type="button" onclick="addAdminAiApi(5)" style="margin-top:10px;margin-left:6px;padding:7px 12px;border:1px solid #1565C0;border-radius:6px;background:#fff;color:#1565C0;font-size:11px;font-weight:700;cursor:pointer">+ Tambah 5 baris</button>
+          <label style="display:flex;align-items:center;gap:8px;margin-top:12px;font-size:12px;color:#1A1F36;cursor:pointer">
+            <input id="adminAiVision" type="checkbox" checked style="accent-color:#1565C0;width:16px;height:16px">
+            Izinkan analisis Vision dari foto Print History
+          </label>
+          <div style="font-size:11px;color:#8A96B8;margin-top:8px;line-height:1.5">API key disimpan di Firestore dan digunakan langsung dari browser. Pengguna yang diberi izin baca dokumen konfigurasi dapat mengakses key; untuk keamanan lebih kuat gunakan backend/proxy.</div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">
+            <button type="button" onclick="saveAdminAiSettings()" style="padding:8px 14px;border:0;border-radius:6px;background:#1B7F3A;color:#fff;font-size:12px;font-weight:700;cursor:pointer">Simpan Konfigurasi AI</button>
+            <button type="button" onclick="smartTestAiConnection()" id="adminAiTestBtn" style="padding:8px 14px;border:1px solid #1565C0;border-radius:6px;background:#fff;color:#1565C0;font-size:12px;font-weight:700;cursor:pointer">Tes Koneksi API</button>
+            <button type="button" onclick="clearAdminAiSettings()" style="padding:8px 14px;border:1px solid #D32F2F;border-radius:6px;background:#fff;color:#D32F2F;font-size:12px;font-weight:700;cursor:pointer">Hapus API Key</button>
+          </div>
+          <div id="adminAiStatus" role="status" style="font-size:11px;color:#4A5680;margin-top:9px"></div>
+        </div>
+      </div>
+
+      <div id="adminNW" style="display:none"></div>
+      <!-- MODE tabs -->
+      <div id="hyoModeTabs" style="display:flex;gap:0;margin-bottom:20px;border:1.5px solid #C5D0F0;border-radius:9px;overflow:hidden">
+        <button onclick="setAdminMode('add',this)" id="adminModeAdd" style="flex:1;padding:9px;background:#1565C0;color:#fff;border:none;font-size:12px;font-weight:700;cursor:pointer;font-family:var(--ui-font)">➕ Tambah Baru</button>
+        <button onclick="setAdminMode('edit',this)" id="adminModeEdit" style="flex:1;padding:9px;background:#F0F4FF;color:#4A5680;border:none;border-left:1.5px solid #C5D0F0;font-size:12px;font-weight:600;cursor:pointer;font-family:var(--ui-font)">✏️ Edit / Hapus</button>
+      </div>
+
+      <!-- ADD FORM -->
+      <div id="adminFormAdd">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">
+          <div>
+            <label style="font-size:11px;font-weight:600;color:#4A5680;display:block;margin-bottom:4px">Kode Error *</label>
+            <input id="af_k" placeholder="Contoh: 5@US100" style="width:100%;box-sizing:border-box;padding:9px 12px;border:1.5px solid #C5D0F0;border-radius:8px;font-size:13px;font-family:var(--ui-font);outline:none" onfocus="this.style.borderColor='#1565C0'" onblur="this.style.borderColor='#C5D0F0'">
+          </div>
+          <div>
+            <label style="font-size:11px;font-weight:600;color:#4A5680;display:block;margin-bottom:4px">Sub-Modul *</label>
+            <input id="af_m" placeholder="Contoh: USB (Enkripsi)" style="width:100%;box-sizing:border-box;padding:9px 12px;border:1.5px solid #C5D0F0;border-radius:8px;font-size:13px;font-family:var(--ui-font);outline:none" onfocus="this.style.borderColor='#1565C0'" onblur="this.style.borderColor='#C5D0F0'">
+          </div>
+        </div>
+        <div style="margin-bottom:14px">
+          <label style="font-size:11px;font-weight:600;color:#4A5680;display:block;margin-bottom:4px">Deskripsi Kerusakan *</label>
+          <textarea id="af_d" placeholder="Deskripsi error dalam Bahasa Indonesia..." rows="2" style="width:100%;box-sizing:border-box;padding:9px 12px;border:1.5px solid #C5D0F0;border-radius:8px;font-size:13px;font-family:var(--ui-font);outline:none;resize:vertical" onfocus="this.style.borderColor='#1565C0'" onblur="this.style.borderColor='#C5D0F0'"></textarea>
+        </div>
+        <div style="margin-bottom:14px">
+          <label style="font-size:11px;font-weight:600;color:#4A5680;display:block;margin-bottom:4px">Analisa Penyebab</label>
+          <textarea id="af_p" placeholder="Analisa penyebab kerusakan..." rows="2" style="width:100%;box-sizing:border-box;padding:9px 12px;border:1.5px solid #C5D0F0;border-radius:8px;font-size:13px;font-family:var(--ui-font);outline:none;resize:vertical" onfocus="this.style.borderColor='#1565C0'" onblur="this.style.borderColor='#C5D0F0'"></textarea>
+        </div>
+        <div style="margin-bottom:14px">
+          <label style="font-size:11px;font-weight:600;color:#4A5680;display:block;margin-bottom:4px">Tindakan / Solusi</label>
+          <textarea id="af_t" placeholder="Langkah-langkah tindakan perbaikan..." rows="2" style="width:100%;box-sizing:border-box;padding:9px 12px;border:1.5px solid #C5D0F0;border-radius:8px;font-size:13px;font-family:var(--ui-font);outline:none;resize:vertical" onfocus="this.style.borderColor='#1565C0'" onblur="this.style.borderColor='#C5D0F0'"></textarea>
+        </div>
+        <div style="margin-bottom:20px">
+          <label style="font-size:11px;font-weight:600;color:#4A5680;display:block;margin-bottom:6px">Status</label>
+          <div style="display:flex;gap:10px;flex-wrap:wrap">
+            <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px"><input type="radio" name="af_s" value="⚠️ WARNING" checked> ⚠️ WARNING</label>
+            <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px"><input type="radio" name="af_s" value="🔧 PERIKSA / PERBAIKI"> 🔧 PERIKSA / PERBAIKI</label>
+            <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px"><input type="radio" name="af_s" value="💻 SOFTWARE"> 💻 SOFTWARE</label>
+          </div>
+        </div>
+        <div id="adminAddMsg" style="display:none;margin-bottom:12px;padding:10px 14px;border-radius:8px;font-size:12px;font-weight:600"></div>
+        <button onclick="adminAddRecord()" style="padding:11px 28px;background:#1B7F3A;color:#fff;border:none;border-radius:9px;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--ui-font);transition:opacity .15s" onmouseover="this.style.opacity='.85'" onmouseout="this.style.opacity='1'">✅ Simpan Record Baru</button>
+      </div>
+
+      <!-- EDIT/DELETE PANEL -->
+      <div id="adminFormEdit" style="display:none">
+        <div style="display:flex;gap:10px;margin-bottom:14px">
+          <input id="ae_search" placeholder="Cari kode error atau deskripsi..." style="flex:1;padding:9px 12px;border:1.5px solid #C5D0F0;border-radius:8px;font-size:13px;font-family:var(--ui-font);outline:none" onfocus="this.style.borderColor='#1565C0'" onblur="this.style.borderColor='#C5D0F0'" oninput="adminSearchEdit()">
+          <button onclick="adminSearchEdit()" style="padding:9px 18px;background:#1565C0;color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:var(--ui-font)">🔍 Cari</button>
+        </div>
+        <div id="ae_results" style="max-height:340px;overflow-y:auto;border:1.5px solid #E8EEFF;border-radius:10px"></div>
+      </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- EDIT RECORD MODAL -->
+<div id="adminEditRecordOvl" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:600;align-items:center;justify-content:center;padding:20px">
+  <div style="background:#fff;border-radius:14px;width:100%;max-width:700px;max-height:90vh;overflow-y:auto;box-shadow:0 24px 80px rgba(0,0,0,.3)">
+    <div style="background:linear-gradient(135deg,#1565C0,#0D47A1);padding:18px 22px;border-radius:14px 14px 0 0;display:flex;justify-content:space-between;align-items:center">
+      <div style="font-size:15px;font-weight:700;color:#fff">✏️ Edit Record</div>
+      <button onclick="closeEditRecord()" style="background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.3);border-radius:7px;color:#fff;padding:5px 12px;font-size:12px;cursor:pointer;font-family:var(--ui-font)">✕</button>
+    </div>
+    <div style="padding:22px">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+        <div>
+          <label style="font-size:11px;font-weight:600;color:#4A5680;display:block;margin-bottom:4px">Kode Error</label>
+          <input id="er_k" style="width:100%;box-sizing:border-box;padding:9px 12px;border:1.5px solid #C5D0F0;border-radius:8px;font-size:13px;font-family:var(--ui-font);outline:none;background:#F0F4FF;color:#4A5680" readonly>
+        </div>
+        <div>
+          <label style="font-size:11px;font-weight:600;color:#4A5680;display:block;margin-bottom:4px">Sub-Modul</label>
+          <input id="er_m" style="width:100%;box-sizing:border-box;padding:9px 12px;border:1.5px solid #C5D0F0;border-radius:8px;font-size:13px;font-family:var(--ui-font);outline:none" onfocus="this.style.borderColor='#1565C0'" onblur="this.style.borderColor='#C5D0F0'">
+        </div>
+      </div>
+      <div style="margin-bottom:12px">
+        <label style="font-size:11px;font-weight:600;color:#4A5680;display:block;margin-bottom:4px">Deskripsi</label>
+        <textarea id="er_d" rows="2" style="width:100%;box-sizing:border-box;padding:9px 12px;border:1.5px solid #C5D0F0;border-radius:8px;font-size:13px;font-family:var(--ui-font);outline:none;resize:vertical" onfocus="this.style.borderColor='#1565C0'" onblur="this.style.borderColor='#C5D0F0'"></textarea>
+      </div>
+      <div style="margin-bottom:12px">
+        <label style="font-size:11px;font-weight:600;color:#4A5680;display:block;margin-bottom:4px">Analisa Penyebab</label>
+        <textarea id="er_p" rows="2" style="width:100%;box-sizing:border-box;padding:9px 12px;border:1.5px solid #C5D0F0;border-radius:8px;font-size:13px;font-family:var(--ui-font);outline:none;resize:vertical" onfocus="this.style.borderColor='#1565C0'" onblur="this.style.borderColor='#C5D0F0'"></textarea>
+      </div>
+      <div style="margin-bottom:12px">
+        <label style="font-size:11px;font-weight:600;color:#4A5680;display:block;margin-bottom:4px">Tindakan</label>
+        <textarea id="er_t" rows="2" style="width:100%;box-sizing:border-box;padding:9px 12px;border:1.5px solid #C5D0F0;border-radius:8px;font-size:13px;font-family:var(--ui-font);outline:none;resize:vertical" onfocus="this.style.borderColor='#1565C0'" onblur="this.style.borderColor='#C5D0F0'"></textarea>
+      </div>
+      <div style="margin-bottom:20px">
+        <label style="font-size:11px;font-weight:600;color:#4A5680;display:block;margin-bottom:6px">Status</label>
+        <div style="display:flex;gap:10px;flex-wrap:wrap">
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px"><input type="radio" name="er_s" value="⚠️ WARNING"> ⚠️ WARNING</label>
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px"><input type="radio" name="er_s" value="🔧 PERIKSA / PERBAIKI"> 🔧 PERIKSA / PERBAIKI</label>
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px"><input type="radio" name="er_s" value="💻 SOFTWARE"> 💻 SOFTWARE</label>
+        </div>
+      </div>
+      <div style="display:flex;gap:10px">
+        <button onclick="adminSaveEdit()" style="padding:10px 22px;background:#1565C0;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--ui-font)">💾 Simpan Perubahan</button>
+        <button onclick="adminDeleteRecord()" style="padding:10px 22px;background:#D32F2F;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--ui-font)">🗑️ Hapus Record</button>
+        <button onclick="closeEditRecord()" style="padding:10px 22px;background:#F0F4FF;color:#4A5680;border:1.5px solid #C5D0F0;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;font-family:var(--ui-font)">Batal</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<link rel="stylesheet" href="css/overrides.css">
+
+<script src="js/admin.js"></script>
+
+<script>
+  const headerLogo = document.querySelector('.logo-icon img');
+  const pageFavicon = document.getElementById('pageFavicon');
+  if(headerLogo && pageFavicon) pageFavicon.href = headerLogo.src;
+</script>
+
+
+<script src="js/ui-shell.js"></script>
+
+<script src="js/clara-chat.js"></script>
+
+<script>
+/* footer sidebar: nama/role sesuai akun yang login + tombol Keluar */
+(function(){
+  const lo=document.getElementById('techLogoutBtn');if(!lo)return;
+  const $=id=>document.getElementById(id);
+  function upd(){
+    const on=lo.style.display&&lo.style.display!=='none';
+    $('sbLogout').style.display=on?'flex':'none';
+    const m=on?(lo.title||'').match(/Login sebagai:\s*(.+?)\s*\((Admin|Teknisi)\)\s*$/):null;
+    const adm=!!m&&m[2]==='Admin';
+    $('sbAv').textContent=adm?'TS':'FSE';$('sbAv').classList.toggle('adm',adm);
+    $('sbU1').textContent=m?(adm?'Technical Support':'Teknisi (FSE)'):'Field Service Engineer';
+    $('sbU2').textContent=m?m[1]:'PT. Citius Solusi Indonesia';
+  }
+  new MutationObserver(upd).observe(lo,{attributes:true,attributeFilter:['style','title']});upd();
+})();
+</script>
+
+<script>
+/* mode tampilan: ikon kecil / sedang / daftar (tersimpan per menu) */
+const VM_ICONS={small:'<rect width="18" height="18" x="3" y="3" rx="2"/><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/>',medium:'<rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/>',list:'<path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/>'};
+const VM_TIP={small:'Ikon kecil',medium:'Ikon sedang',list:'Daftar'};
+function vmMake(el,onPick){el.innerHTML='';['small','medium','list'].forEach(m=>{const b=document.createElement('button');b.type='button';b.dataset.m=m;b.title=VM_TIP[m];b.setAttribute('aria-label',VM_TIP[m]);b.innerHTML='<svg class="i" viewBox="0 0 24 24">'+VM_ICONS[m]+'</svg>';b.onclick=()=>onPick(m);el.appendChild(b);});}
+function vmGet(k,d){try{return localStorage.getItem('citius_vm_'+k)||d;}catch(e){return d;}}
+function vmPut(k,m){try{localStorage.setItem('citius_vm_'+k,m);}catch(e){}}
+function vmMark(el,m){el.querySelectorAll('button').forEach(b=>b.classList.toggle('on',b.dataset.m===m));}
+let vmView='dashboard';
+function vmApply(v){const m=vmGet(v,'medium');['small','medium','list'].forEach(x=>document.body.classList.toggle('vm-'+x,x===m));vmMark(document.getElementById('vmCtl'),m);}
+vmMake(document.getElementById('vmCtl'),m=>{vmPut(vmView,m);vmApply(vmView);});
+vmApply(vmView);
+(function(){
+  const list=document.getElementById('portalAdminFileList');if(!list)return;
+  const ctl=document.createElement('div');ctl.className='vm-ctl in';list.parentNode.insertBefore(ctl,list);
+  const ap=m=>{['small','medium','list'].forEach(x=>list.classList.toggle('vma-'+x,x===m));vmMark(ctl,m);};
+  vmMake(ctl,m=>{vmPut('admin',m);ap(m);});ap(vmGet('admin','list'));
+})();
+</script>
+
+<script src="js/dashboard-live.js"></script>
+<script src="data/hw-images.js"></script>
+<script src="js/hw-brm860.js"></script>
+<style>
+.bub.ejc{max-width:100%}
+.bub.ejc .ejs{font-size:11.5px;color:#64748B;margin:2px 0 8px}
+.bub.ejc table{width:100%;border-collapse:collapse;font-size:12px}
+.bub.ejc th{background:#E8EEFF;color:#1E3A8A;text-align:left;padding:5px 8px;font-weight:700;font-size:11px}
+.bub.ejc td{padding:5px 8px;border-top:1px solid #E5E9F2;vertical-align:top}
+.bub.ejc td i{color:#94A3B8;font-style:normal}
+.bub.ejc td em{color:#B45309;font-style:normal;font-weight:700;font-size:11px}
+</style>
+
+<script src="data/hw50-images.js"></script>
+<script src="js/hw-brm50.js"></script>
+<script src="js/ej-reader.js"></script>
+<script src="js/alarm-cs3.js"></script>
+</body>
+</html>
